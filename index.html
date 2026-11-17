@@ -1,0 +1,2232 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f4ede0">
+<title>清明上河图 · 汴京入画</title>
+<style>
+:root {
+  color-scheme: light;
+  --paper: #f5eee0;
+  --ink: #242e27;
+  --soft-ink: #58564a;
+  --line: #d6cbb6;
+  --red: #9c4232;
+  --serif: "Songti SC", "Noto Serif CJK SC", "STSong", SimSun, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-width: 290px;
+  min-height: 100svh;
+  color: var(--ink);
+  font: 14px var(--sans);
+  background:
+    radial-gradient(ellipse at 75% 0%, #fff8e9 0%, transparent 60%),
+    radial-gradient(ellipse at 7% 48%, #eee3d0 0%, transparent 59%), var(--paper);
+}
+button { font: inherit; color: inherit; }
+button:focus-visible, canvas:focus-visible { outline: 2px solid #ad5b40; outline-offset: 3px; }
+button:not(:disabled) { cursor: pointer; }
+.shell { width: min(100% - clamp(30px, 7.22vw, 116px), 1620px); margin-inline: auto; }
+.masthead { display: flex; justify-content: space-between; align-items: center; min-height: 73px; border-bottom: 1px solid var(--line); gap: 12px; }
+.brand { display: flex; align-items: center; gap: 12px; font: 700 20px var(--serif); letter-spacing: .14em; white-space: nowrap; }
+.seal {
+  display: grid; place-items: center; width: 32px; height: 32px; padding-left: 2px;
+  background: var(--red); color: #fff4d9; border-radius: 2px 1px 3px 1px;
+  outline: 1px solid #f4dcc0; outline-offset: -4px;
+  font: 700 18px var(--serif); transform: rotate(-5deg);
+}
+.modes { display: flex; align-items: center; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 5px; }
+.mode {
+  display: flex; align-items: center; gap: 6px; min-height: 30px; padding: 3px 11px;
+  border: 0; border-radius: 3px; background: none; font-size: 12px; color: var(--soft-ink);
+}
+.mode[aria-pressed="true"] { background: #e8ddc6; color: #393c31; }
+.mode:hover { background: #eee3ce; }
+.mode[aria-pressed="true"] .icon { color: var(--red); }
+.icon { width: 16px; height: 16px; display: inline-block; flex: 0 0 16px; }
+.intro { display: flex; align-items: end; justify-content: space-between; gap: 28px; padding: 25px 1px 25px; }
+.epoch { display: flex; align-items: center; gap: 9px; margin: 0 0 8px; color: var(--red); font: 700 12px var(--serif); letter-spacing: .21em; }
+.epoch::before { content: ""; width: 18px; height: 1px; background: currentColor; }
+h1 { margin: 0; font: 800 clamp(42px, 5vw, 78px)/.99 var(--serif); letter-spacing: .095em; }
+.intro-note { max-width: 290px; margin: 0 0 1px; padding-left: 15px; border-left: 1px solid #b98d72; color: var(--soft-ink); font: 15px/1.8 var(--serif); }
+figure { margin: 0; }
+.viewer {
+  height: clamp(410px, calc(100svh - 338px), 730px);
+  position: relative; isolation: isolate; overflow: hidden;
+  outline: 1px solid #ac9b7b; border: 5px solid #f6ecda;
+  box-shadow: 0 4px 15px #63492819;
+  background: radial-gradient(ellipse at 32% 30%, #efe2c7, #d1b991);
+}
+.viewer:fullscreen { width: 100%; height: 100%; border: 0; outline: 0; }
+.viewer.expanded { position: fixed; inset: 0; z-index: 5; width: 100%; height: 100%; border: 0; outline: 0; }
+.stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+.stage:not(.ready) { opacity: 0; }
+.stage.dragging { cursor: grabbing; }
+.viewer::after {
+  content: ""; position: absolute; z-index: 1; inset: 0; pointer-events: none;
+  box-shadow: inset 0 0 0 1px #32251050, inset 0 0 80px #42331c2a;
+}
+.edge { position: absolute; z-index: 2; width: 18px; height: 18px; border: solid #fff0cbd9; pointer-events: none; }
+.edge.tl { left: 8px; top: 8px; border-width: 1px 0 0 1px; }
+.edge.tr { right: 8px; top: 8px; border-width: 1px 1px 0 0; }
+.edge.bl { left: 8px; bottom: 8px; border-width: 0 0 1px 1px; }
+.edge.br { right: 8px; bottom: 8px; border-width: 0 1px 1px 0; }
+.scene-card {
+  position: absolute; z-index: 2; left: 22px; top: 22px; max-width: min(310px, 73%); padding: 10px 15px 9px;
+  color: #332d23; background: #fbefdcd9; border: 1px solid #ffefd7; border-left: 2px solid #a75038;
+  box-shadow: 0 2px 12px #2e281b11; pointer-events: none;
+}
+.scene-name { margin: 0; font: 800 20px/1.28 var(--serif); letter-spacing: .13em; }
+.scene-note { margin: 5px 0 1px; color: #53493b; font: 12px/1.45 var(--sans); }
+.marker {
+  position: absolute; z-index: 2; display: flex; align-items: center; gap: 6px;
+  min-height: 27px; padding: 3px 9px; color: #332d23; background: #f7ebd5eb; border: 1px solid #b8a788;
+  box-shadow: 0 2px 6px #34271c2b; border-radius: 3px; white-space: nowrap;
+  font: 700 13px var(--serif); letter-spacing: .06em; transform: translate(-50%, -100%);
+}
+.marker::after { content: ""; position: absolute; left: calc(50% - 1px); top: 100%; height: 10px; width: 1px; background: #f5e7cc; }
+.marker::before { content: ""; width: 5px; height: 5px; transform: rotate(45deg); background: var(--red); }
+.marker:hover { background: #fff7e8; }
+.marker[hidden] { display: none; }
+.tools-left, .tools-right { position: absolute; z-index: 3; bottom: 19px; display: flex; gap: 8px; align-items: center; }
+.tools-left { left: 20px; }
+.tools-right { right: 20px; gap: 5px; }
+.tool {
+  display: grid; place-items: center; width: 36px; height: 36px; padding: 0;
+  border: 1px solid #f7eedad6; border-radius: 4px; background: #f9eedcE8; color: #323b31;
+  box-shadow: 0 1px 5px #392c1928;
+}
+.tool:hover { background: #fff7e7; color: #914330; }
+.tool:disabled { opacity: .48; }
+.hint {
+  margin: 0; padding: 6px 8px; color: #fdf4df; background: #252c22b0;
+  border-radius: 3px; font-size: 11px; letter-spacing: .04em; pointer-events: none;
+}
+.touch-hint { display: none; }
+.unavailable {
+  position: absolute; z-index: 3; inset: 0; display: grid; place-content: center; padding: 24px;
+  text-align: center; color: #372e21; background: #e5d2abde;
+}
+.unavailable[hidden] { display: none; }
+.unavailable strong { font: 700 24px var(--serif); }
+.unavailable p { margin: .7em 0 0; }
+.route { display: flex; align-items: stretch; margin-top: 14px; border-block: 1px solid var(--line); }
+.route-title { display: flex; align-items: center; gap: 7px; padding: 0 18px 0 4px; font-size: 11px; font-weight: 650; color: var(--red); letter-spacing: .08em; white-space: nowrap; }
+.route-title .icon { width: 15px; height: 15px; }
+.stops { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); flex: 1; }
+.stop {
+  position: relative; display: grid; justify-items: start; align-content: center; gap: 3px;
+  padding: 8px clamp(8px, 1.5vw, 24px); min-height: 58px;
+  border: 0; border-left: 1px solid var(--line); background: transparent; text-align: left;
+}
+.stop strong { font: 800 16px var(--serif); letter-spacing: .075em; white-space: nowrap; }
+.stop span { color: #605b4d; font-size: 10px; white-space: nowrap; }
+.stop:hover { background: #f9f1e3; }
+.stop[aria-pressed="true"] { background: #eae0cc; color: #873b2d; }
+.stop[aria-pressed="true"]::before { content: ""; background: #9c4232; position: absolute; top: -1px; left: -1px; right: 0; height: 2px; }
+footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0 14px; color: #645c4d; font-size: 11px; letter-spacing: .065em; }
+footer span:last-child { text-align: right; }
+@media (pointer: coarse) {
+  .mouse-hint { display: none; }
+  .touch-hint { display: block; }
+  .tool { width: 42px; height: 42px; }
+}
+@media (max-width: 800px) {
+  .masthead { min-height: 61px; }
+  .intro { padding: 23px 0 19px; }
+  .intro-note { font-size: 13px; max-width: 198px; }
+  .route-title { display: none; }
+  .stop:first-child { border-left: 0; }
+  .viewer { height: clamp(430px, calc(100svh - 294px), 640px); }
+}
+@media (max-width: 530px) {
+  .brand { font-size: 17px; gap: 8px; }
+  .seal { width: 28px; height: 28px; font-size: 16px; }
+  .mode { padding-inline: 7px; }
+  .mode .icon { width: 13px; height: 13px; flex-basis: 13px; }
+  .intro { display: block; padding-top: 21px; padding-bottom: 15px; }
+  h1 { font-size: clamp(35px, 10.5vw, 52px); }
+  .intro-note { max-width: unset; font-size: 12px; margin-top: 12px; padding-left: 0; border: 0; }
+  .viewer { border-width: 3px; height: clamp(380px, calc(100svh - 267px), 630px); }
+  .scene-card { left: 13px; top: 13px; padding: 7px 9px; }
+  .scene-name { font-size: 17px; }
+  .scene-note { font-size: 11px; }
+  .tools-left { left: 11px; bottom: 11px; }
+  .tools-right { right: 11px; bottom: 11px; gap: 4px; }
+  .tool { width: 34px; height: 36px; }
+  .hint { position: absolute; left: 0; bottom: 43px; white-space: nowrap; }
+  .route { margin-top: 12px; }
+  .stop { min-height: 46px; padding: 5px 2px; justify-items: center; }
+  .stop strong { font-size: clamp(11px, 3.42vw, 15px); letter-spacing: 0; }
+  .stop span { display: none; }
+  footer { padding-top: 9px; font-size: 10px; }
+  footer span:last-child { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="masthead">
+    <div class="brand"><span class="seal" aria-hidden="true">汴</span>汴京入画</div>
+    <div class="modes" role="group" aria-label="日景与夜景">
+      <button class="mode" type="button" data-light="0" aria-pressed="true"><canvas class="icon" data-icon="sun" aria-hidden="true"></canvas>日景</button>
+      <button class="mode" type="button" data-light="1" aria-pressed="false"><canvas class="icon" data-icon="moon" aria-hidden="true"></canvas>夜景</button>
+    </div>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="title">
+      <div>
+        <p class="epoch">北宋 · 汴京</p>
+        <h1 id="title">清明上河图</h1>
+      </div>
+      <p class="intro-note">沿汴河从城郊船埠入城，穿过虹桥下的水道，看两岸的茶肆和摊贩。</p>
+    </section>
+    <figure aria-label="汴京三维长卷">
+      <div class="viewer" id="viewer">
+        <canvas class="stage" id="stage" tabindex="0" aria-label="三维汴河。方向键旋转视角，加减键缩放，Home 键回到总览。" aria-describedby="view-help"></canvas>
+        <div class="edge tl"></div><div class="edge tr"></div><div class="edge bl"></div><div class="edge br"></div>
+        <div class="scene-card" aria-live="polite">
+          <p class="scene-name" id="scene-name">长卷总览</p>
+          <p class="scene-note" id="scene-note">汴河贯穿市集，舟车在虹桥相会。</p>
+        </div>
+        <button class="marker" type="button" data-stop="1" hidden>河湾船埠</button>
+        <button class="marker" type="button" data-stop="2" hidden>虹桥</button>
+        <button class="marker" type="button" data-stop="4" hidden>汴京城门</button>
+        <div class="tools-left">
+          <button class="tool" type="button" id="motion" aria-label="暂停动画" title="暂停动画"><canvas class="icon" data-icon="pause" aria-hidden="true"></canvas></button>
+          <p class="hint mouse-hint" id="view-help">拖动旋转 · 滚轮缩放</p>
+          <p class="hint touch-hint">单指旋转 · 双指缩放</p>
+        </div>
+        <div class="tools-right">
+          <button class="tool" type="button" id="zoom-in" title="放大" aria-label="放大"><canvas class="icon" data-icon="plus" aria-hidden="true"></canvas></button>
+          <button class="tool" type="button" id="zoom-out" title="缩小" aria-label="缩小"><canvas class="icon" data-icon="minus" aria-hidden="true"></canvas></button>
+          <button class="tool" type="button" id="reset" title="回到总览" aria-label="回到总览"><canvas class="icon" data-icon="reset" aria-hidden="true"></canvas></button>
+          <button class="tool" type="button" id="fullscreen" title="全屏" aria-label="全屏"><canvas class="icon" data-icon="expand" aria-hidden="true"></canvas></button>
+        </div>
+        <div class="unavailable" id="unavailable" hidden>
+          <strong>暂时无法绘制三维场景</strong><p>请在支持 WebGL 2 的浏览器中打开。</p>
+        </div>
+        <noscript><div class="unavailable"><strong>请启用 JavaScript 以展开三维长卷</strong></div></noscript>
+      </div>
+      <nav class="route" aria-label="沿河导览">
+        <div class="route-title" aria-hidden="true"><canvas class="icon" data-icon="route"></canvas>沿河导览</div>
+        <div class="stops">
+          <button class="stop" type="button" data-stop="0" aria-pressed="true"><strong>长卷总览</strong><span>汴河两岸</span></button>
+          <button class="stop" type="button" data-stop="1" aria-pressed="false"><strong>河湾船埠</strong><span>货船靠岸</span></button>
+          <button class="stop" type="button" data-stop="2" aria-pressed="false"><strong>虹桥市集</strong><span>木拱跨河</span></button>
+          <button class="stop" type="button" data-stop="3" aria-pressed="false"><strong>沿岸街巷</strong><span>铺肆连绵</span></button>
+          <button class="stop" type="button" data-stop="4" aria-pressed="false"><strong>汴京城门</strong><span>行旅入城</span></button>
+        </div>
+      </nav>
+    </figure>
+  </main>
+  <footer><span>取意张择端《清明上河图》的原创三维演绎</span><span>单页 · 可离线游览</span></footer>
+</div>
+<script>
+(() => {
+"use strict";
+const $ = (selector) => document.querySelector(selector);
+const all = (selector) => Array.from(document.querySelectorAll(selector));
+const stage = $("#stage");
+const viewer = $("#viewer");
+const mix = (a, b, t) => a + (b - a) * t;
+const limit = (value, a, b) => Math.min(b, Math.max(a, value));
+const TAU = 2 * Math.PI;
+
+function drawIcon(canvas) {
+  const ctx = canvas.getContext("2d");
+  const name = canvas.dataset.icon;
+  canvas.width = canvas.height = 48;
+  ctx.scale(2, 2);
+  ctx.strokeStyle = getComputedStyle(canvas).color;
+  ctx.lineWidth = 1.45;
+  ctx.lineCap = ctx.lineJoin = "round";
+
+  function path(points, close = false) {
+    ctx.beginPath();
+    ctx.moveTo(...points[0]);
+    points.slice(1).forEach((point) => ctx.lineTo(...point));
+    if (close) ctx.closePath();
+    ctx.stroke();
+  }
+
+  function arc(x, y, radius, start = 0, end = TAU) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, start, end);
+    ctx.stroke();
+  }
+
+  switch (name) {
+    case "sun":
+      arc(12, 12, 4.1);
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4;
+        const x = Math.cos(a), y = Math.sin(a);
+        path([[12 + x * 7, 12 + y * 7], [12 + x * 9.2, 12 + y * 9.2]]);
+      }
+      break;
+    case "moon":
+      ctx.beginPath();
+      ctx.moveTo(16, 4);
+      ctx.bezierCurveTo(7, 1.2, 2, 10.5, 6.3, 16.7);
+      ctx.bezierCurveTo(10.3, 22.2, 18.1, 19.5, 19.9, 13.9);
+      ctx.bezierCurveTo(13.2, 15.5, 9.6, 8.4, 16, 4);
+      ctx.stroke();
+      break;
+    case "pause":
+      path([[9, 5.5], [9, 18.5]]);
+      path([[15, 5.5], [15, 18.5]]);
+      break;
+    case "play":
+      path([[8, 5], [18.5, 12], [8, 19]], true);
+      break;
+    case "plus":
+      path([[12, 5.2], [12, 18.8]]);
+      path([[5.2, 12], [18.8, 12]]);
+      break;
+    case "minus":
+      path([[5.2, 12], [18.8, 12]]);
+      break;
+    case "reset":
+      arc(12, 12, 7.3, -2.62, 2.45);
+      path([[4.9, 5.4], [4.9, 9.2], [9.2, 9.2]]);
+      break;
+    case "expand":
+    case "shrink": {
+      const a = name === "expand" ? 4.5 : 9.3;
+      const b = name === "expand" ? 9.3 : 4.5;
+      path([[a, b], [a, a], [b, a]]);
+      path([[24-a, b], [24-a, a], [24-b, a]]);
+      path([[a, 24-b], [a, 24-a], [b, 24-a]]);
+      path([[24-a, 24-b], [24-a, 24-a], [24-b, 24-a]]);
+      break;
+    }
+    case "route":
+      arc(5, 16, 2.2);
+      arc(19, 7, 2.2);
+      ctx.beginPath();
+      ctx.moveTo(7.3, 16);
+      ctx.bezierCurveTo(15, 16, 8, 7, 16.6, 7);
+      ctx.stroke();
+      break;
+  }
+}
+all("[data-icon]").forEach(drawIcon);
+
+let seed = 304113;
+function rnd() {
+  seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+  return seed / 4294967296;
+}
+const range = (a, b) => mix(a, b, rnd());
+const choice = (items) => items[Math.floor(rnd() * items.length)];
+const add = (a, b) => a.map((value, i) => value + b[i]);
+const sub = (a, b) => a.map((value, i) => value - b[i]);
+const scale = (a, value) => a.map((n) => n * value);
+const dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const unit = (a) => scale(a, 1 / (Math.hypot(...a) || 1));
+const blend = (a, b, t) => a.map((v, i) => mix(v, b[i], t));
+
+function rgb(hex) {
+  const value = parseInt(hex, 16);
+  return [(value >> 16) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
+}
+const varColor = (color, n = .08) => scale(color, range(1-n, 1+n));
+const palette = (colors) => colors.split(" ").map(rgb);
+
+function lookAt(eye, target) {
+  const z = unit(sub(eye, target));
+  const x = unit(cross([0, 1, 0], z));
+  const y = cross(z, x);
+  return new Float32Array([
+    x[0],y[0],z[0],0, x[1],y[1],z[1],0, x[2],y[2],z[2],0,
+    -dot(x,eye),-dot(y,eye),-dot(z,eye),1
+  ]);
+}
+function ortho(left, right, bottom, top, near, far) {
+  return new Float32Array([
+    2/(right-left),0,0,0, 0,2/(top-bottom),0,0, 0,0,-2/(far-near),0,
+    -(right+left)/(right-left),-(top+bottom)/(top-bottom),-(far+near)/(far-near),1
+  ]);
+}
+function combine(a, b) {
+  const out = new Float32Array(16);
+  for (let col = 0; col < 4; col++) {
+    for (let row = 0; row < 4; row++) {
+      out[col*4+row] = a[row]*b[col*4] + a[row+4]*b[col*4+1] + a[row+8]*b[col*4+2] + a[row+12]*b[col*4+3];
+    }
+  }
+  return out;
+}
+function project(m, [x, y, z]) {
+  return [
+    m[0]*x + m[4]*y + m[8]*z + m[12],
+    m[1]*x + m[5]*y + m[9]*z + m[13],
+    m[2]*x + m[6]*y + m[10]*z + m[14]
+  ];
+}
+
+const STONE=0, TILE=1, WOOD=2, LEAF=3, CLOTH=4, WATER=5, EARTH=6, LANTERN=7,
+  ROBE=8, LEG=9, HILL=10, INK=11, WINDOW=12, SIGN=13, WING=14, REED=15, OAR=16;
+const UP = [0,1,0];
+const STRIDE = 12;
+
+class Mesh {
+  constructor() {
+    this.data = [];
+    this.x = this.y = this.z = 0;
+    this.cs = 1;
+    this.sn = 0;
+  }
+
+  at(x, y, z, angle, draw) {
+    const ox = this.x, oy = this.y, oz = this.z, oc = this.cs, os = this.sn;
+    const cs = Math.cos(angle), sn = Math.sin(angle);
+    this.x += x*oc + z*os; this.y += y; this.z += -x*os + z*oc;
+    this.cs = oc*cs - os*sn; this.sn = os*cs + oc*sn;
+    draw(this);
+    this.x=ox; this.y=oy; this.z=oz; this.cs=oc; this.sn=os;
+  }
+
+  write([x,y,z], [nx,ny,nz], [r,g,b], mat, uv) {
+    this.data.push(
+      this.x+x*this.cs+z*this.sn, this.y+y, this.z-x*this.sn+z*this.cs,
+      nx*this.cs+nz*this.sn, ny, -nx*this.sn+nz*this.cs,
+      r,g,b, mat, uv ? uv[0] : 0, uv ? uv[1] : 0
+    );
+  }
+
+  tri(a, b, c, color, mat = STONE, normal) {
+    const n = normal || unit(cross(sub(b,a),sub(c,a)));
+    this.write(a,n,color,mat); this.write(b,n,color,mat); this.write(c,n,color,mat);
+  }
+
+  quad(a, b, c, d, color, mat = STONE, normal, uv) {
+    const n = normal || unit(cross(sub(b,a),sub(c,a)));
+    this.write(a,n,color,mat,uv && uv[0]); this.write(b,n,color,mat,uv && uv[1]);
+    this.write(c,n,color,mat,uv && uv[2]); this.write(a,n,color,mat,uv && uv[0]);
+    this.write(c,n,color,mat,uv && uv[2]); this.write(d,n,color,mat,uv && uv[3]);
+  }
+
+  smoothQuad(points, normals, color, mat) {
+    for (const i of [0,1,2,0,2,3]) this.write(points[i],normals[i],color,mat);
+  }
+
+  box(x, y, z, w, h, d, color, mat = STONE) {
+    const a = x-w/2, b = x+w/2, p = z-d/2, q = z+d/2, t = y+h;
+    this.quad([a,y,q],[b,y,q],[b,t,q],[a,t,q],color,mat,[0,0,1]);
+    this.quad([b,y,p],[a,y,p],[a,t,p],[b,t,p],color,mat,[0,0,-1]);
+    this.quad([b,y,q],[b,y,p],[b,t,p],[b,t,q],color,mat,[1,0,0]);
+    this.quad([a,y,p],[a,y,q],[a,t,q],[a,t,p],color,mat,[-1,0,0]);
+    this.quad([a,t,q],[b,t,q],[b,t,p],[a,t,p],color,mat,UP);
+    this.quad([a,y,p],[b,y,p],[b,y,q],[a,y,q],color,mat,[0,-1,0]);
+  }
+
+  beam(a, b, ra, rb, color, mat = WOOD, sides = 4, caps = true) {
+    const axis = unit(sub(b,a));
+    const ref = Math.abs(axis[1]) > .96 ? [1,0,0] : UP;
+    const u = unit(cross(axis,ref)), v = cross(axis,u);
+    const base = [], tip = [];
+    for (let i = 0; i < sides; i++) {
+      const angle = (i + .5) / sides * TAU;
+      const d = add(scale(u,Math.cos(angle)),scale(v,Math.sin(angle)));
+      base.push(add(a,scale(d,ra)));
+      tip.push(add(b,scale(d,rb)));
+    }
+    for (let i = 0; i < sides; i++) {
+      const j = (i+1) % sides;
+      this.quad(base[i],base[j],tip[j],tip[i],color,mat);
+      if (caps) {
+        this.tri(a,base[j],base[i],color,mat);
+        this.tri(b,tip[i],tip[j],color,mat);
+      }
+    }
+  }
+
+  ball(x,y,z,rx,ry,rz,color,mat = STONE,sides = 8,rows = 4) {
+    const point = (theta,phi) => [
+      x + rx * Math.cos(theta) * Math.sin(phi),
+      y + ry * Math.cos(phi),
+      z + rz * Math.sin(theta) * Math.sin(phi)
+    ];
+    for (let v = 0; v < rows; v++) {
+      const p0 = v * Math.PI/rows, p1 = (v+1) * Math.PI/rows;
+      for (let u = 0; u < sides; u++) {
+        const t0 = u * TAU/sides, t1 = (u+1) * TAU/sides;
+        const a = point(t0,p0), b = point(t1,p0), c = point(t1,p1), d = point(t0,p1);
+        if (v === 0) this.tri(a,c,d,color,mat);
+        else if (v === rows-1) this.tri(a,b,c,color,mat);
+        else this.quad(a,b,c,d,color,mat);
+      }
+    }
+  }
+}
+
+const vertexPose = `
+layout(location=0) in vec3 aPosition;
+layout(location=1) in vec3 aNormal;
+layout(location=2) in vec3 aColor;
+layout(location=3) in float aMaterial;
+layout(location=4) in vec2 aUv;
+layout(location=5) in vec4 iCol0;
+layout(location=6) in vec4 iCol1;
+layout(location=7) in vec4 iCol2;
+layout(location=8) in vec4 iCol3;
+layout(location=9) in vec4 iTint;
+uniform bool uInstanced;
+uniform float uClock;
+mat4 model() {
+  return uInstanced ? mat4(iCol0,iCol1,iCol2,iCol3) : mat4(1.0);
+}
+vec4 posed(mat4 m) {
+  vec3 p=aPosition;
+  if (aMaterial == 9.0 && uInstanced && iTint.w >= 0.0) {
+    float swing=sin(uClock*8.9+iTint.w)*sign(p.x)*clamp((0.5-p.y)*2.0,0.0,1.0);
+    p.z+=swing*0.16;
+    p.y+=max(0.0,swing)*0.08;
+  }
+  if (aMaterial == 14.0) p.y+=sin(uClock*6.0+iTint.w)*abs(p.x)*0.48;
+  if (aMaterial == 16.0) {
+    p.z+=sin(uClock*3.0+iTint.w)*clamp((p.y-0.2)*0.3,0.0,1.0)*0.22;
+    p.x+=cos(uClock*3.0+iTint.w)*clamp(abs(p.z)*0.5,0.0,1.0)*0.27;
+  }
+  vec4 world = m * vec4(p,1.0);
+  if (aMaterial == 4.0) {
+    world.z+=sin(uClock*2.2+world.y*3.8+world.x*0.7)*0.038;
+  }
+  if (aMaterial == 3.0 || aMaterial == 15.0) {
+    float sway = aMaterial == 15.0 ? 0.07 : 0.035;
+    world.x+=sin(uClock*1.8+world.y*0.7+world.x*0.41)*sway;
+    world.z+=cos(uClock*1.4+world.z*0.3+world.y*1.7)*sway;
+  }
+  return world;
+}
+`;
+
+const sceneVert = `#version 300 es
+precision highp float;
+${vertexPose}
+uniform mat4 uCamera;
+uniform mat4 uLightMatrix;
+uniform mat4 uView;
+out vec3 vWorld;
+out vec3 vNormal;
+out vec3 vColor;
+out vec4 vShadow;
+out vec2 vUv;
+out float vDepth;
+flat out float vMat;
+void main() {
+  mat4 m = model();
+  vec4 world = posed(m);
+  vWorld = world.xyz;
+  vNormal = mat3(m) * aNormal;
+  vColor = aColor;
+  if (uInstanced && aMaterial == 8.0) vColor *= iTint.rgb;
+  if (aMaterial == 9.0 && uInstanced) vColor = mix(vColor,iTint.rgb,0.37);
+  vShadow = uLightMatrix * world;
+  vUv = aUv; vMat = aMaterial;
+  vDepth = -(uView*world).z;
+  gl_Position = uCamera * world;
+}`;
+
+const noiseGlsl = `
+float hash21(vec2 p) {
+  vec3 a = fract(vec3(p.xyx)*0.1031);
+  a += dot(a, a.yzx + 33.33);
+  return fract((a.x+a.y)*a.z);
+}
+float noise2(vec2 p) {
+  vec2 i=floor(p), f=fract(p);
+  vec2 u=f*f*(3.0-2.0*f);
+  return mix(mix(hash21(i),hash21(i+vec2(1.0,0.0)),u.x),
+    mix(hash21(i+vec2(0.0,1.0)),hash21(i+1.0),u.x),u.y);
+}
+`;
+
+const sceneFrag = `#version 300 es
+precision highp float;
+in vec3 vWorld;
+in vec3 vNormal;
+in vec3 vColor;
+in vec4 vShadow;
+in vec2 vUv;
+in float vDepth;
+flat in float vMat;
+uniform highp sampler2D uShadow;
+uniform sampler2D uSigns;
+uniform vec3 uSun;
+uniform float uClock;
+uniform float uNight;
+uniform float uShadowTexel;
+out vec4 color;
+${noiseGlsl}
+
+float shadowAt(vec3 normal) {
+  vec3 q=vShadow.xyz*0.5+0.5;
+  if (q.x<=0.0 || q.x>=1.0 || q.y<=0.0 || q.y>=1.0 || q.z>=1.0) return 0.0;
+  float bias = 0.00048 + (1.0-max(dot(normal,uSun),0.0))*0.00103;
+  float s=0.0;
+  for (int i=-1; i<=1; i++) {
+    for (int j=-1; j<=1; j++) {
+      s += step(texture(uShadow,q.xy+vec2(float(i),float(j))*uShadowTexel*1.1).r+bias,q.z);
+    }
+  }
+  return s / 9.0;
+}
+
+vec3 river(float shade) {
+  vec2 p=vWorld.xz;
+  float center=2.8*sin((p.x+10.0)*0.072)+3.8*sin((p.x-13.0)*0.040)-0.035*p.x;
+  float halfWidth=10.0+1.35*sin((p.x+38.0)*0.037)+0.57*sin(p.x*0.096);
+  float shallow=smoothstep(0.65,1.05,abs((p.y-center)/halfWidth));
+  float flow = p.y - center*0.39;
+  float swell=noise2(vec2(p.x*0.21+uClock*0.09,flow*0.71));
+  float fine=noise2(vec2(p.x*0.61+uClock*0.41,flow*2.9));
+  float bend=flow*5.7+sin(p.x*0.57+uClock*0.71)*0.69+sin(p.x*0.15-flow*0.51)*2.05;
+  float ripples=sin(bend+uClock*1.5)*0.5+0.5;
+  float broken=noise2(vec2(p.x*0.74+uClock*0.20,flow*1.7));
+  float strokes=smoothstep(0.83,0.997,ripples)*smoothstep(0.39,0.86,swell)*(0.24+0.76*broken);
+  float flecks=smoothstep(0.76,0.95,fine)*smoothstep(0.26,0.77,ripples);
+  float edge=smoothstep(0.92,1.02,abs((p.y-center)/halfWidth))*sin(bend*0.63-uClock)*0.035;
+  vec3 deep=mix(vec3(0.250,0.444,0.396),vec3(0.101,0.221,0.271),uNight);
+  vec3 bank=mix(vec3(0.613,0.645,0.435),vec3(0.200,0.303,0.298),uNight);
+  vec3 c=mix(deep,bank,clamp(shallow*0.74+swell*0.32,0.0,1.0));
+  c += vec3(0.56,0.73,0.59)*(strokes*0.22+flecks*0.17+edge);
+  float gleam=exp(-pow((p.x+23.0+p.y*0.82)/24.0,2.0))*(1.0-uNight)*0.13;
+  c+=vec3(1.0,0.78,0.40)*gleam*(0.31+fine+strokes);
+  c*=1.0-shade*mix(0.25,0.11,uNight);
+  c+=vec3(0.024,0.045,0.053)*uNight*strokes*4.2;
+  float lanternDistance=exp(-pow((p.x+2.0)/5.6,2.0))*exp(-abs(p.y-center)*0.13);
+  c+=vec3(0.44,0.20,0.043)*lanternDistance*uNight*(flecks*0.9+strokes*0.61);
+  return c;
+}
+
+void main() {
+  vec3 n=normalize(vNormal);
+  float shade=shadowAt(n);
+  float grain=hash21(gl_FragCoord.xy)-0.5;
+  if (vMat==5.0) {
+    color=vec4(river(shade)+grain*0.021,1.0);
+    return;
+  }
+
+  vec3 base=vColor;
+  float speckle=noise2(vWorld.xz*4.0+vec2(vWorld.y*1.7));
+  if (vMat==13.0) {
+    base=texture(uSigns,vUv).rgb;
+  } else if (vMat==6.0) {
+    float broad=noise2(vWorld.xz*0.29);
+    base *= 0.9+broad*0.15+speckle*0.055;
+    float scratches=smoothstep(0.73,0.94,noise2(vWorld.xz*vec2(2.4,6.8)));
+    base=mix(base,base*0.77,scratches*0.37);
+  } else if (vMat==10.0) {
+    float wash=noise2(vWorld.xz*0.105+vec2(vWorld.y*0.26));
+    float brush=noise2(vWorld.xz*vec2(0.31,0.77));
+    base *= 0.91+wash*0.18+brush*0.047;
+  } else if (vMat==1.0) {
+    base *= 0.93+speckle*0.12;
+    if (vUv.y>0.035) {
+      float tileLine=fract((vUv.y-0.04)*12.0);
+      float lip=(1.0-smoothstep(0.023,0.18,tileLine))*smoothstep(0.018,0.102,vUv.y);
+      float ridge=sin(fract(vUv.x)*3.141593);
+      base *= 0.97+0.07*ridge-0.18*lip;
+    }
+  } else if (vMat==2.0 || vMat==16.0) {
+    float gr=sin(vWorld.x*25.0+vWorld.z*11.0+vWorld.y*37.0);
+    base *= 0.97 + gr*0.027 + (speckle-0.5)*0.06;
+  } else if (vMat==4.0 || vMat==8.0) {
+    base *= 0.96+0.08*speckle;
+  } else if (vMat==3.0 || vMat==15.0) {
+    float stipple=noise2(vWorld.xz*7.8+vWorld.y*vec2(6.23,4.15));
+    base *= 0.85+speckle*0.17+stipple*0.13;
+    base=mix(base,base*vec3(0.82,0.91,0.80),smoothstep(0.61,1.0,stipple)*0.46);
+  }
+
+  float nd=max(dot(n,uSun),0.0);
+  float skyFill=0.65 + max(n.y,0.0)*0.12;
+  vec3 sunlight=vec3(1.16,1.095,0.91)*(0.34*nd*(1.0-shade));
+  vec3 bounced=vec3(1.05,1.025,0.97)*skyFill;
+  vec3 day=base*(bounced+sunlight)*(1.0-shade*0.12);
+  vec3 night = base * (vec3(0.39,0.48,0.65) + vec3(0.18,0.28,0.36)*nd*(1.0-shade*0.4));
+  night += vec3(0.021,0.035,0.056)*(0.5+max(n.y,0.0)*0.5);
+  if (vMat==7.0) {
+    night=mix(vec3(0.93,0.45,0.10),vec3(1.0,0.88,0.45),max(nd,speckle*0.83));
+  } else if (vMat==12.0) {
+    night=base*vec3(1.43,0.97,0.53)+vec3(0.22,0.074,0.018);
+  }
+  float bridgeGlow=exp(-abs(vWorld.x+2.0)*0.27)*exp(-abs(vWorld.z-vWorld.x*0.10)*0.052);
+  night+=vec3(0.16,0.07,0.027)*bridgeGlow*base;
+  float fog=smoothstep(148.0,218.0,vDepth)*0.58;
+  if (vMat==10.0) fog=max(fog,0.31);
+  vec3 haze=mix(vec3(0.85,0.784,0.621),vec3(0.167,0.243,0.321),uNight);
+  vec3 lit=mix(mix(day,night,uNight),haze,fog);
+  color=vec4(lit+grain*0.023,1.0);
+}`;
+
+const shadowVert = `#version 300 es
+precision highp float;
+${vertexPose}
+uniform mat4 uLightMatrix;
+void main() {
+  gl_Position = uLightMatrix * posed(model());
+}`;
+const shadowFrag = `#version 300 es
+precision highp float;
+void main() {}`;
+
+const skyVert = `#version 300 es
+out vec2 vUv;
+void main() {
+  vec2 p=vec2(float((gl_VertexID << 1)&2),float(gl_VertexID&2));
+  vUv=p;
+  gl_Position=vec4(p*2.0-1.0,0.0,1.0);
+}`;
+const skyFrag = `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform float uNight;
+out vec4 color;
+${noiseGlsl}
+void main() {
+  vec2 p=vUv;
+  float silk=noise2(vec2(p.x*8.0,p.y*15.0))+0.45*noise2(vec2(p.x*19.0,p.y*32.0));
+  vec3 day=mix(vec3(0.927,0.874,0.748),vec3(0.813,0.726,0.566),p.y*0.76);
+  day+=vec3(0.068,0.061,0.046)*(smoothstep(0.67,0.98,silk)+0.7*(1.0-p.x));
+  vec3 night=mix(vec3(0.248,0.329,0.408),vec3(0.076,0.127,0.233),p.y);
+  night+=vec3(0.09,0.10,0.11)*silk*0.28;
+  float grain=(hash21(gl_FragCoord.xy)-0.5)*0.026;
+  color=vec4(mix(day,night,uNight)+grain,1.0);
+}`;
+
+const signWords = ["茶","酒","香","米","布","汴京","客舍","脚店"];
+function makeSignAtlas(gl) {
+  const atlas=document.createElement("canvas");
+  atlas.width=512; atlas.height=256;
+  const ctx=atlas.getContext("2d");
+  for (let i=0; i<signWords.length; i++) {
+    const x=(i%4)*128, y=Math.floor(i/4)*128;
+    ctx.fillStyle=i===5 ? "#393e31" : "#e0c695";
+    ctx.fillRect(x,y,128,128);
+    ctx.strokeStyle=i===5 ? "#a68959" : "#863f2a";
+    ctx.lineWidth=4;
+    ctx.strokeRect(x+8,y+8,112,112);
+    ctx.fillStyle=i===5 ? "#e9ca83" : "#463525";
+    ctx.font=(i>=5 ? "bold 45px " : "bold 78px ") + getComputedStyle(document.documentElement).getPropertyValue("--serif");
+    ctx.textBaseline="middle"; ctx.textAlign="center";
+    ctx.fillText(signWords[i],x+64,y+66);
+  }
+  const texture=gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,texture);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,atlas);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  return texture;
+}
+
+function sign(mesh,x,y,z,w,h,index) {
+  const u0=((index%4)*128+1)/512, u1=u0+126/512;
+  const v1=1-(Math.floor(index/4)*128+1)/256, v0=v1-126/256;
+  mesh.quad([x-w/2,y,z],[x+w/2,y,z],[x+w/2,y+h,z],[x-w/2,y+h,z],
+    [1,1,1],SIGN,[0,0,1],[[u0,v0],[u1,v0],[u1,v1],[u0,v1]]);
+}
+
+function program(gl, vertex, fragment, uniforms) {
+  function compile(type, source) {
+    const shader=gl.createShader(type);
+    gl.shaderSource(shader,source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader,gl.COMPILE_STATUS)) throw Error(gl.getShaderInfoLog(shader));
+    return shader;
+  }
+  const vs=compile(gl.VERTEX_SHADER,vertex), fs=compile(gl.FRAGMENT_SHADER,fragment);
+  const handle=gl.createProgram();
+  gl.attachShader(handle,vs); gl.attachShader(handle,fs);
+  gl.linkProgram(handle);
+  gl.deleteShader(vs); gl.deleteShader(fs);
+  if (!gl.getProgramParameter(handle,gl.LINK_STATUS)) throw Error(gl.getProgramInfoLog(handle));
+  return {handle, ...Object.fromEntries(uniforms.map((name)=>[name,gl.getUniformLocation(handle,name)]))};
+}
+
+function upload(gl, mesh, instances = 0) {
+  const vao=gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  const vertexBuffer=gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER,vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(mesh.data),gl.STATIC_DRAW);
+  const layout=[[3,0],[3,3],[3,6],[1,9],[2,10]];
+  layout.forEach(([size,offset],index)=>{
+    gl.enableVertexAttribArray(index);
+    gl.vertexAttribPointer(index,size,gl.FLOAT,false,STRIDE*4,offset*4);
+  });
+  const vertices=mesh.data.length/STRIDE;
+  mesh.data=[];
+  const batch={ vao,vertices,instances,vertexBuffer };
+  if (instances) {
+    batch.stream=gl.createBuffer();
+    batch.transforms=new Float32Array(instances*20);
+    gl.bindBuffer(gl.ARRAY_BUFFER,batch.stream);
+    gl.bufferData(gl.ARRAY_BUFFER,batch.transforms.byteLength,gl.STREAM_DRAW);
+    for (let i=0; i<5; i++) {
+      const attrib=5+i;
+      gl.enableVertexAttribArray(attrib);
+      gl.vertexAttribPointer(attrib,4,gl.FLOAT,false,20*4,i*16);
+      gl.vertexAttribDivisor(attrib,1);
+    }
+  }
+  gl.bindVertexArray(null);
+  return batch;
+}
+
+function transform(batch,i,x,y,z,ang,size,tint,phase,roll = 0) {
+  const c=Math.cos(ang), s=Math.sin(ang), a=Math.cos(roll), b=Math.sin(roll);
+  batch.transforms.set([
+    c*size,0,-s*size,0,
+    s*b*size,a*size,c*b*size,0,
+    s*a*size,-b*size,c*a*size,0,
+    x,y,z,1,
+    tint[0],tint[1],tint[2],phase
+  ],i*20);
+}
+const riverZ = (x) => 2.8*Math.sin((x+10)*.072)+3.8*Math.sin((x-13)*.040)-.035*x;
+const riverWidth = (x) => 10+1.35*Math.sin((x+38)*.037)+.57*Math.sin(x*.096);
+const bankZ = (x, side) => riverZ(x)+side*riverWidth(x);
+const bankRoad = (x, side) => bankZ(x,side)+side*(5.75+.66*Math.sin(x*.112));
+const bridgeX=-2;
+const bridgeZ=riverZ(bridgeX)-.24;
+const bridgeSpan=riverWidth(bridgeX)+3.95;
+const bridgeDeck=(z) => .81+4.34*Math.pow(Math.max(0,Math.cos(limit((z-bridgeZ)/bridgeSpan,-1,1)*Math.PI/2)),1.22);
+const groundY=.67;
+const glows=[];
+
+const tea=rgb("98724d"), dirt=rgb("c7ac75"), basalt=rgb("766c54"), ink=rgb("403a2b");
+const maple=rgb("8d4930"), lumber=rgb("734b33"), plaster=rgb("d4b987"), rice=rgb("e2c994");
+const jadeRoof=palette("596559 69756a 525e56 646b5c 4d5d54 727463");
+const clayRoof=palette("7e684b 8d7455 786951 967d5b 706851 9c835b");
+const greyRoof=palette("5d6051 666a5a 515b51 696957 777865 596456");
+const willowTones=palette("7e874e 929954 6c7948 9c9c54 546940 7e8f55 9f9c62");
+const pineTones=palette("626d48 5c6c4f 506147 6a7e52 7e8557 788058");
+const shopCloths=palette("ac633e c68e55 5e7560 a45a44 c1a46b 78835d");
+const robeColors=palette("b16d4a 60483b 788878 636b80 8c3931 c49b55 7e6d4a 64604e aa715d 465747 d4b98a");
+
+function lantern(mesh,x,y,z,size) {
+  mesh.beam([x,y+size*.33,z],[x,y+size*.93,z],.025,.02,lumber,WOOD,4,false);
+  mesh.ball(x,y,z,size*.47,size*.50,size*.47,rgb("b84b2e"),LANTERN,7,3);
+  mesh.box(x,y+size*.425,z,size*.53,size*.10,size*.53,ink,WOOD);
+  mesh.box(x,y-size*.51,z,size*.49,size*.11,size*.49,ink,WOOD);
+  mesh.beam([x,y-size*.44,z],[x,y-size*.88,z],size*.095,size*.043,rgb("a55935"),CLOTH,4,false);
+  glows.push([mesh.x+x*mesh.cs+z*mesh.sn,mesh.y+y,mesh.z-x*mesh.sn+z*mesh.cs,size]);
+}
+
+function windowGrid(mesh,x,y,z,w,h,glowing) {
+  mesh.box(x,y-.075,z,w+.14,h+.15,.086,lumber,WOOD);
+  mesh.box(x,y,z+.052,w,h,.036,glowing ? rgb("b58f5b") : rgb("76634a"),glowing ? WINDOW : INK);
+  for (let i=1; i<4; i++) mesh.box(x-w*.5+w*i/4,y,z+.08,.034,h,.022,lumber,WOOD);
+  mesh.box(x,y+h*.51,z+.085,w,.033,.025,lumber,WOOD);
+}
+
+function roof(mesh,y,w,d,pitch,tiles,hip=.18,cap=true) {
+  const eave=choice(tiles), ridge=scale(eave,.73);
+  const ridgeHalf=w*(.5-hip);
+  function point(t,u,side) {
+    const tip=Math.pow(Math.abs(u),6)*(.10+.25*t);
+    return [u*mix(ridgeHalf,w*.5,Math.pow(t,.90)),y+pitch*Math.pow(1-t,1.6)+tip,side*d*.5*t];
+  }
+  const columns=Math.max(6,Math.round(w/.43));
+  const rows=5;
+  for (const side of [-1,1]) {
+    for (let u=0; u<columns; u++) {
+      const a=2*u/columns-1, b=2*(u+1)/columns-1;
+      const tile=blend(eave,choice(tiles),.55);
+      for (let r=0; r<rows; r++) {
+        const t0=r/rows, t1=(r+1)/rows;
+        const points=[point(t0,a,side),point(t1,a,side),point(t1,b,side),point(t0,b,side)];
+        const uv=[[u,t0+.04],[u,t1+.04],[u+1,t1+.04],[u+1,t0+.04]];
+        if (side<0) {
+          points.reverse();
+          uv.reverse();
+        }
+        mesh.quad(...points,varColor(tile,.054),TILE,undefined,uv);
+      }
+      const start=point(1,a,side), end=point(1,b,side);
+      mesh.beam(start,end,.087,.087,ridge,TILE,4,false);
+      const tail=add(point(1,a+.08/columns,side),[0,-.037,side*.046]);
+      mesh.ball(...tail,.069,.069,.05,scale(eave,.83),TILE,5,2);
+      if (u%2===0) {
+        for (let r=0; r<rows; r++) {
+          const a0=add(point(r/rows,a,side),[0,.026,0]);
+          const a1=add(point((r+1)/rows,a,side),[0,.026,0]);
+          mesh.beam(a0,a1,.026,.033,scale(tile,1.13),TILE,3,false);
+        }
+      }
+    }
+
+    for (const end of [-1,1]) {
+      for (let r=0; r<rows; r++) {
+        const a=point(r/rows,end,side), b=point((r+1)/rows,end,side);
+        mesh.beam(a,b,.069,.082,scale(eave,.76),TILE,4,false);
+      }
+    }
+  }
+
+  for (const side of [-1,1]) {
+    for (let i=0; i<rows; i++) {
+      const t0=i/rows, t1=(i+1)/rows;
+      const points=[point(t0,side,-1),point(t1,side,-1),point(t1,side,1),point(t0,side,1)];
+      if (side<0) points.reverse();
+      mesh.quad(...points,varColor(eave),TILE,[side*.76,.64,0]);
+    }
+    if (cap) {
+      const u=point(0,side,1);
+      const tip=add(u,[side*.34,.15,0]);
+      mesh.beam(u,tip,.14,.112,ridge,TILE,5);
+      mesh.beam(tip,add(tip,[side*.12,.12,0]),.12,.041,ridge,TILE,5);
+    }
+  }
+  const a=point(0,-1,1), b=point(0,1,1);
+  mesh.beam(add(a,[0,.026,0]),add(b,[0,.026,0]),.138,.138,ridge,TILE,5);
+  mesh.box(0,y-.15,0,w*.86,.14,d*.88,scale(eave,.70),WOOD);
+}
+
+function house(mesh,x,z,w,d,h,angle,opts={}) {
+  const base=opts.base === undefined ? groundY : opts.base;
+  const roofSet=opts.roof || choice([jadeRoof,greyRoof,clayRoof]);
+  const walls=opts.plaster || varColor(plaster,.12);
+  const paint=opts.paint || choice([maple,lumber,tea]);
+  mesh.at(x,base,z,angle,() => {
+    const stoop=opts.stoop || .21;
+    const depth=d*.5;
+    mesh.box(0,0,0,w+.28,stoop,d+.38,varColor(basalt,.1),STONE);
+    mesh.box(0,stoop,0,w,h-stoop,d,walls,STONE);
+    mesh.box(0,h-.16,0,w+.095,.18,d+.10,paint,WOOD);
+    mesh.box(0,stoop,0,w+.10,.16,d+.11,paint,WOOD);
+
+    const bays=Math.max(2,Math.round(w/1.37));
+    const bay=w/bays;
+    for (const face of [-1,1]) {
+      mesh.at(0,0,0,face===1 ? 0 : Math.PI,() => {
+        for (let i=0; i<=bays; i++) {
+          const xi=(i-bays/2)*bay;
+          mesh.box(xi,stoop,depth+.023,.112,h-stoop+.04,.123,paint,WOOD);
+        }
+        for (let i=0; i<bays; i++) {
+          const xi=(i+.5-bays/2)*bay;
+          const doorway=i===Math.floor(bays/2) && face===1;
+          if (doorway) {
+            mesh.box(xi,stoop+.03,depth+.035,bay*.72,h*.75,.075,scale(paint,.74),WOOD);
+            const slit=opts.open ? ink : scale(paint,.8);
+            mesh.box(xi,stoop+.04,depth+.08,bay*.51,h*.63,.025,slit,opts.open ? INK : WOOD);
+            mesh.box(xi-.023,stoop+.04,depth+.10,.047,h*.63,.028,paint,WOOD);
+            mesh.box(xi+.12,h*.42,depth+.122,.054,.06,.03,rgb("c49b5e"),WOOD);
+          } else {
+            windowGrid(mesh,xi,h*.36,depth,bay*.70,h*.39,opts.lit || rnd()<.38);
+            mesh.box(xi,h*.30,depth+.076,bay*.82,.087,.13,paint,WOOD);
+          }
+        }
+      });
+    }
+    for (const face of [-1,1]) {
+      mesh.box(face*w*.5,stoop,0,.105,h-stoop,.129,paint,WOOD);
+      mesh.box(face*(w*.5+.013),h*.49,0,.062,.088,d,paint,WOOD);
+    }
+    roof(mesh,h+.08,w+.86,d+1.19,opts.pitch || range(.95,1.39),roofSet,opts.hip ?? .16);
+
+    if (opts.gallery) {
+      const front=depth+.92;
+      mesh.box(0,0,depth+.43,w+.2,stoop+.027,1.05,basalt,STONE);
+      for (const xi of [-w*.45,-w*.16,w*.17,w*.45]) {
+        mesh.box(xi,stoop,front,.143,h*.85,.145,paint,WOOD);
+      }
+      mesh.box(0,h*.86,front,w+.25,.18,.15,paint,WOOD);
+      mesh.at(0,0,front-.42,0,()=>roof(mesh,h*.9,w+.70,1.55,.46,roofSet,.11,false));
+      lantern(mesh,-w*.35,h*.71,front-.12,.36);
+      lantern(mesh,w*.35,h*.71,front-.12,.36);
+    } else if (opts.lit) {
+      lantern(mesh,w*.27,h*.79,depth+.40,.35);
+    }
+
+    if (opts.sign !== undefined) {
+      const height=h*.70;
+      mesh.beam([w*.37,height+.54,depth+.02],[w*.37,height+.54,depth+.96],.037,.036,lumber,WOOD,4);
+      mesh.box(w*.37,height-.16,depth+.72,.53,.67,.055,lumber,WOOD);
+      sign(mesh,w*.37,height-.137,depth+.751,.48,.62,opts.sign);
+    }
+    if (opts.stairs) {
+      mesh.box(0,0,depth+.7,w*.5,.10,.74,basalt,STONE);
+      mesh.box(0,.1,depth+.47,w*.45,.10,.63,varColor(basalt),STONE);
+    }
+  });
+}
+
+function umbrella(mesh,x,y,z,r,color) {
+  mesh.beam([x,y,z],[x,y+2.28,z],.046,.039,lumber,WOOD,5);
+  const center=[x,y+2.30,z];
+  for (let i=0; i<10; i++) {
+    const a=i*TAU/10, b=(i+1)*TAU/10;
+    const p=[x+Math.cos(a)*r,y+1.99,z+Math.sin(a)*r];
+    const q=[x+Math.cos(b)*r,y+1.99,z+Math.sin(b)*r];
+    const c=varColor(color,i%2?.08:.13);
+    mesh.tri(center,q,p,c,CLOTH);
+    mesh.quad(p,q,add(q,[0,-.12,0]),add(p,[0,-.12,0]),scale(c,.84),CLOTH);
+    mesh.beam(center,p,.027,.016,scale(c,.71),WOOD,3,false);
+  }
+}
+
+function basket(mesh,x,y,z,size,fill) {
+  const s=8;
+  const base=rgb("94734a"), rim=rgb("b5945d");
+  for (let i=0; i<s; i++) {
+    const a=i*TAU/s, b=(i+1)*TAU/s;
+    const point=(angle,q,h)=>[x+Math.cos(angle)*q,y+h,z+Math.sin(angle)*q];
+    const p=point(a,size*.52,size*.59), q=point(b,size*.52,size*.59);
+    mesh.quad(point(b,size*.36,0),point(a,size*.36,0),p,q,varColor(base,.16),WOOD);
+    mesh.beam(p,q,.034,.034,rim,WOOD,4,false);
+  }
+  if (fill) {
+    mesh.ball(x,y+size*.57,z,size*.43,size*.18,size*.43,fill,STONE,7,2);
+  }
+}
+
+function marketStall(mesh,x,z,angle,color,index,striped=false) {
+  mesh.at(x,groundY,z,angle,()=>{
+    const w=range(2.25,3.85), d=range(1.30,1.84);
+    for (const side of [-1,1]) {
+      for (const front of [-1,1]) {
+        const ax=side*w*.44, az=front*d*.42;
+        mesh.box(ax,0,az,.09,1.82-front*.13,.10,lumber,WOOD);
+      }
+    }
+    mesh.box(0,.68,.33,w*.83,.11,.72,tea,WOOD);
+    mesh.box(0,.05,.5,w*.78,.60,.10,scale(lumber,.95),WOOD);
+    mesh.box(0,.26,.57,w*.78,.042,.06,tea,WOOD);
+    for (let i=0; i<5; i++) {
+      const a=w*(i/5-.53), b=w*((i+1)/5-.53);
+      const c=striped && i%2 ? rice : varColor(color,.16);
+      mesh.quad([a,2.05,-d*.58],[a,1.76,d*.67],[b,1.76,d*.67],[b,2.05,-d*.58],c,CLOTH);
+      mesh.quad([a,1.76,d*.67],[b,1.76,d*.67],[b,1.54,d*.67],[a,1.55,d*.67],scale(c,.90),CLOTH,[0,0,1]);
+    }
+    const fill=choice([rgb("a35739"),rgb("92a471"),rice,rgb("c58a4c")]);
+    for (let i=0; i<4; i++) basket(mesh,(i-1.5)*w*.185,.80,.44,range(.30,.47),varColor(fill,.25));
+    basket(mesh,w*.4,0,.65,.43,fill);
+    if (index===0 || index===2) {
+      mesh.beam([w*.40,1.61,.65],[w*.40,2.08,1.0],.035,.032,lumber,WOOD,4);
+      sign(mesh,w*.40,1.17,1.03,.42,.59,index);
+    } else if (index%2===1) {
+      lantern(mesh,w*.40,1.43,d*.60,.28);
+    }
+  });
+}
+
+function willow(mesh,x,z,height,type="willow",base=groundY) {
+  const colors=type==="pine" ? pineTones : willowTones;
+  const offset=range(-.14,.14)*height;
+  const trunk=rgb("695442");
+  mesh.at(x,base,z,range(-Math.PI,Math.PI),()=>{
+    const radius=height*(type==="pine" ? .043 : .052);
+    const k1=[offset*.45,height*.35,0], k2=[offset,height*.67,height*.066];
+    mesh.beam([0,-.04,0],k1,radius,radius*.71,trunk,WOOD,7);
+    mesh.beam(k1,k2,radius*.72,radius*.43,varColor(trunk),WOOD,6);
+    for (let i=0; i<5; i++) {
+      const angle=i*TAU/5+range(-.32,.32);
+      const reach=height*range(.15,.31);
+      const p=[offset+Math.cos(angle)*reach,height*range(.72,1.02),Math.sin(angle)*reach];
+      const baseP=i%2===0 ? k2 : blend(k1,k2,.48);
+      const mid=blend(p,baseP,.51);
+      mesh.beam(baseP,mid,radius*.52,radius*.32,varColor(trunk,.15),WOOD,5,false);
+      mesh.beam(mid,p,radius*.32,radius*.12,trunk,WOOD,5,false);
+      for (let j=0; j<3; j++) {
+        const q=[p[0]+range(-.12,.13)*height,p[1]+range(-.085,.13)*height,p[2]+range(-.14,.14)*height];
+        const r=height*range(.127,.205);
+        const tall=type==="pine" ? range(.44,.63) : range(.78,1.04);
+        mesh.ball(...q,r,r*tall,r*range(.82,1.19),varColor(choice(colors),.12),LEAF,7,3);
+        const other=[q[0]+range(-.12,.12)*height,q[1]-r*.31,q[2]+range(-.14,.14)*height];
+        mesh.ball(...other,r*.65,r*tall*.62,r*.77,choice(colors),LEAF,6,3);
+      }
+      if (type==="willow") {
+        for (let j=0; j<3; j++) {
+          const droop=height*range(.19,.34);
+          const s=add(p,[Math.cos(angle)*height*.085,range(-.09,.05)*height,Math.sin(angle)*height*.085]);
+          const c=choice(colors);
+          const e=add(s,[Math.cos(angle)*(j+1)*height*.055,-droop,Math.sin(angle)*(j+1)*height*.045]);
+          const between=blend(s,e,.50);
+          mesh.beam(s,between,height*.014,height*.009,trunk,REED,3,false);
+          mesh.beam(between,e,height*.009,height*.003,c,REED,3,false);
+          for (let k=0; k<4; k++) {
+            const n=blend(s,e,(k+1)/5);
+            mesh.ball(...n,height*.034,height*.067,height*.035,varColor(c),LEAF,5,2);
+          }
+        }
+      }
+    }
+  });
+}
+
+function ridgeLine(mesh,x0,z0,x1,z1,w,color,y=.70) {
+  const delta=sub([x1,y,z1],[x0,y,z0]);
+  const offset=scale(unit(cross(delta,UP)),w/2);
+  const a=[x0,y,z0], b=[x1,y,z1];
+  mesh.quad(add(a,offset),sub(a,offset),sub(b,offset),add(b,offset),color,EARTH,UP);
+}
+
+function ground(mesh) {
+  const starts=[0,.92,2.25,4.6,10,23,40,61,88,111];
+  const levels=[.04,.25,.54,.665,.668,.672,.68,.78,1.11,1.44];
+  const landColors=palette("b8a477 c3aa75 ada36a b8ae7b bbb181 aaa072 b7ac7a b2a577 af9e71");
+  for (let x=-137; x<137; x+=2.5) {
+    const x1=x+2.5;
+    mesh.quad([x,0,bankZ(x,-1)],[x,0,bankZ(x,1)],[x1,0,bankZ(x1,1)],[x1,0,bankZ(x1,-1)],[1,1,1],WATER,UP);
+    for (const side of [-1,1]) {
+      function bankPoint(xi,k) {
+        const noise=.23*Math.sin(xi*.52+4.3)*Math.min(k,.95)*(k<4 ? 1 : .3);
+        const rise=k>=6 ? Math.sin(xi*.079+k)*.34+Math.sin(xi*.23)*.08 : 0;
+        return [xi,levels[k]+rise,bankZ(xi,side)+side*(starts[k]+noise)];
+      }
+      for (let j=0; j<starts.length-1; j++) {
+        const color=varColor(landColors[j],j<3?.062:.032);
+        const points=[bankPoint(x,j),bankPoint(x,j+1),bankPoint(x1,j+1),bankPoint(x1,j)];
+        if (side<0) points.reverse();
+        mesh.quad(...points,color,EARTH);
+      }
+      const halfWidth=2.16+.18*Math.sin(x*.25);
+      const z0=bankRoad(x,side), z1=bankRoad(x1,side);
+      mesh.quad([x,.686,z0-halfWidth],[x,.686,z0+halfWidth],[x1,.686,z1+halfWidth],[x1,.686,z1-halfWidth],varColor(dirt,.025),EARTH,UP);
+      if (x<-79 || x>93) continue;
+      for (let j=0; j<3; j++) {
+        const xx=x+range(0,2.5), zz=bankZ(xx,side)+side*range(.75,2.08);
+        if (rnd()<.68) {
+          const r=range(.10,.39);
+          mesh.ball(xx,.24+Math.abs(zz-bankZ(xx,side))*.10,zz,r,r*.48,r*range(.63,1.36),varColor(rgb("9b8c64"),.14),STONE,6,2);
+        } else if (Math.abs(x-bridgeX)>4) {
+          for (let i=0; i<5; i++) {
+            const h=range(.24,.86), base=[xx+range(-.19,.19),.35,zz+range(-.13,.13)];
+            const a=add(base,[range(-.27,.27),h,range(-.2,.2)]);
+            mesh.tri(add(base,[-.032,0,0]),add(base,[.043,0,0]),a,choice(willowTones),REED);
+          }
+        }
+      }
+    }
+  }
+  const paths=[
+    [-36,-1,13,-3.2], [2,-1,26,-.8], [28,-1,26,4.6], [64,-1,16,1.6],
+    [-34,1,27,-9], [-11,1,26,.9], [38,1,19,-3.1]
+  ];
+  for (const [x,side,length,end] of paths) {
+    const z=bankRoad(x,side)+side*1.6;
+    ridgeLine(mesh,x,z,x+end*.31,z+side*length*.42,2.09,dirt,.701);
+    ridgeLine(mesh,x+end*.31,z+side*length*.42,x+end,z+side*length,1.83,dirt,.704);
+  }
+  for (const side of [-1,1]) {
+    const start=bridgeZ+side*(bridgeSpan-.20);
+    ridgeLine(mesh,bridgeX,start,bridgeX,bankRoad(bridgeX,side)+side*9.4,4.7,dirt,.701);
+  }
+}
+
+function field(mesh,x,z,w,d,angle) {
+  mesh.at(x,.713,z,angle,()=>{
+    mesh.box(0,-.045,0,w,.055,d,rgb("a29567"),EARTH);
+    const tones=palette("8d8a53 92925b 9b9760 88905f a59a64");
+    for (let i=0; i<Math.floor(d/1.03); i++) {
+      const z=-d/2+.5+i*1.03;
+      const c=choice(tones);
+      mesh.box(0,.011,z,w-.56,.033,.62,varColor(c),EARTH);
+      for (let j=0; j<Math.round(w*.77); j++) {
+        const x=-w/2+.57+j*(w-1)/Math.round(w*.77)+range(-.18,.18);
+        const h=range(.13,.36);
+        mesh.tri([x-.12,.015,z],[x+.10,.025,z],[x+range(-.1,.15),h,z+range(-.14,.17)],varColor(c),REED);
+        mesh.tri([x,.015,z-.12],[x,.025,z+.11],[x+range(-.1,.15),h*.84,z+range(-.14,.17)],varColor(c),REED);
+      }
+    }
+  });
+}
+
+function fence(mesh,x0,z0,x1,z1,spacing=1.55) {
+  const points=Math.ceil(Math.hypot(x1-x0,z1-z0)/spacing);
+  const t=(i, y)=>[mix(x0,x1,i/points),y,mix(z0,z1,i/points)];
+  for (let i=0; i<=points; i++) {
+    mesh.beam(t(i,.64),t(i,1.61+range(-.08,.08)),.061,.048,varColor(lumber),WOOD,5);
+    if (i<points) {
+      mesh.beam(t(i,1.00),t(i+1,1.05),.045,.052,tea,WOOD,4,false);
+      mesh.beam(t(i,1.39),t(i+1,1.41),.05,.053,tea,WOOD,4,false);
+    }
+  }
+}
+function bridge(mesh) {
+  const width=5.65, planks=47;
+  const start=bridgeZ-bridgeSpan, end=bridgeZ+bridgeSpan;
+  for (let i=0; i<planks; i++) {
+    const z=mix(start,end,i/planks), p=mix(start,end,(i+.96)/planks);
+    const a=bridgeDeck(z), b=bridgeDeck(p);
+    const c=varColor(rgb("a7784e"),.16);
+    mesh.quad([bridgeX-width/2,a,z],[bridgeX-width/2,b,p],[bridgeX+width/2,b,p],[bridgeX+width/2,a,z],c,WOOD);
+    mesh.quad([bridgeX+width/2,a,z],[bridgeX+width/2,b,p],[bridgeX+width/2,b-.18,p],[bridgeX+width/2,a-.18,z],scale(c,.74),WOOD,[1,0,0]);
+    mesh.quad([bridgeX-width/2,a,z],[bridgeX-width/2,b,p],[bridgeX-width/2,b-.18,p],[bridgeX-width/2,a-.18,z],scale(c,.74),WOOD,[-1,0,0]);
+    mesh.quad([bridgeX-width/2,a-.21,z],[bridgeX-width/2,b-.21,p],[bridgeX+width/2,b-.21,p],[bridgeX+width/2,a-.21,z],lumber,WOOD,[0,-1,0]);
+  }
+  for (const side of [-1,1]) {
+    const x=bridgeX+side*(width*.49);
+    const steps=22;
+    const at=(i,lift) => {
+      const z=mix(start,end,i/steps);
+      return [x,bridgeDeck(z)+lift,z];
+    };
+    for (let i=0; i<=steps; i++) {
+      const z=at(i,0)[2];
+      mesh.box(x,bridgeDeck(z)-.03,z,.142,.91,.142,maple,WOOD);
+      mesh.box(x,bridgeDeck(z)+.84,z,.174,.12,.174,varColor(lumber),WOOD);
+      if (i<steps) {
+        mesh.beam(at(i,.77),at(i+1,.77),.105,.105,rgb("8c4d31"),WOOD,4,false);
+        mesh.beam(at(i,.30),at(i+1,.30),.066,.066,lumber,WOOD,4,false);
+        mesh.beam(at(i,.31),at(i+1,.74),.037,.037,maple,WOOD,4,false);
+        mesh.beam(at(i,.74),at(i+1,.31),.037,.037,maple,WOOD,4,false);
+        mesh.beam(at(i,-.30),at(i+1,-.30),.167,.167,lumber,WOOD,4,false);
+      }
+      if ([3,7,15,19].includes(i)) {
+        mesh.box(x,bridgeDeck(z)+.9,z,.097,.65,.095,lumber,WOOD);
+        mesh.beam([x,bridgeDeck(z)+1.5,z],[x+side*.30,bridgeDeck(z)+1.53,z],.048,.049,maple,WOOD,4,false);
+        lantern(mesh,x+side*.30,bridgeDeck(z)+1.21,z,.36);
+      }
+    }
+
+    for (let j=0; j<2; j++) {
+      const arcX=bridgeX+side*(width*(.315-.105*j));
+      const pieces=13;
+      function archPoint(i, extra=0) {
+        const pos=2*i/pieces-1;
+        const z=bridgeZ+(bridgeSpan-.62)*pos;
+        const edge=Math.pow(Math.abs(pos),3);
+        const y=bridgeDeck(z)-mix(1.11,.59,edge)+extra;
+        return [arcX,y,z];
+      }
+      for (let i=0; i<pieces;i++) {
+        mesh.beam(archPoint(i),archPoint(i+1),.285,.287,varColor(lumber,.16),WOOD,4);
+        if (i>0) {
+          const a=archPoint(i), b=archPoint(i);
+          a[0]-=.36; b[0]+=.36;
+          mesh.beam(a,b,.077,.077,varColor(tea),WOOD,6);
+        }
+        if (i%2===j && i+2<=pieces) {
+          mesh.beam(archPoint(i,-.27),archPoint(i+2,.44),.153,.149,maple,WOOD,4);
+        }
+      }
+    }
+  }
+  for (let i=1; i<12; i++) {
+    const z=mix(start,end,i/12);
+    const y=bridgeDeck(z)-.66;
+    mesh.beam([bridgeX-width*.51,y,z],[bridgeX+width*.51,y,z],.16,.16,tea,WOOD,4);
+  }
+  for (const side of [-1,1]) {
+    const z=bridgeZ+side*(bridgeSpan-.27);
+    mesh.box(bridgeX,.32,z,6.12,.52,1.65,basalt,STONE);
+    mesh.box(bridgeX,.58,z+side*.72,6.26,.18,1.15,varColor(plaster),STONE);
+    for (const flank of [-1,1]) {
+      const x=bridgeX+flank*3.07;
+      mesh.box(x,.69,z+side*.94,.23,1.02,.23,maple,WOOD);
+      mesh.box(x,1.55,z+side*.94,.31,.15,.31,tea,WOOD);
+    }
+  }
+}
+
+const gateX=53.8;
+const gateZ=bankRoad(gateX,-1)-.10;
+function gate(mesh) {
+  mesh.at(gateX,groundY,gateZ,Math.PI/2,()=>{
+    const radius=1.94, spring=1.56, height=4.66, depth=3.5;
+    const left=-5.1, right=24.3, stones=palette("92846a 9f8e70 a49578 8d7e65 b0a185");
+    for (const [a,b] of [[left,-radius],[radius,right]]) {
+      const columns=Math.ceil((b-a)/1.25);
+      mesh.box((a+b)/2,0,0,b-a,height,depth,varColor(basalt),STONE);
+      for (let j=0;j<8;j++) {
+        const step=height/8;
+        for (let i=0;i<columns;i++) {
+          const aa=limit(mix(a,b,(i-(j%2)*.36)/columns),a,b);
+          const bb=limit(mix(a,b,(i+1-(j%2)*.36)/columns),a,b);
+          if (bb-aa<.02) continue;
+          for (const face of [-1,1]) {
+            const z=face*(depth*.5+.021+range(0,.047));
+            mesh.box((aa+bb)/2,j*step,z,bb-aa-.014,step-.015,.059,varColor(choice(stones),.06),STONE);
+          }
+        }
+      }
+    }
+
+    for (let i=0;i<15;i++) {
+      const a=i*Math.PI/15,b=(i+1)*Math.PI/15;
+      const innerA=[Math.cos(a)*radius,spring+Math.sin(a)*radius];
+      const innerB=[Math.cos(b)*radius,spring+Math.sin(b)*radius];
+      const outerA=[Math.cos(a)*(radius+.35),spring+Math.sin(a)*(radius+.35)];
+      const outerB=[Math.cos(b)*(radius+.35),spring+Math.sin(b)*(radius+.35)];
+      const c=varColor(stones[i%stones.length],.1);
+      for (const face of [-1,1]) {
+        const z=face*(depth*.5+.07);
+        mesh.quad([...innerA,z],[...innerB,z],[...outerB,z],[...outerA,z],c,STONE,[0,0,face]);
+        mesh.quad([...outerA,z],[...outerB,z],[outerB[0],height,z],[outerA[0],height,z],
+          varColor(stones[2]),STONE,[0,0,face]);
+      }
+      mesh.quad([...innerA,-depth*.5],[...innerB,-depth*.5],[...innerB,depth*.5],[...innerA,depth*.5],
+        scale(c,.59),STONE,[0,-1,0]);
+    }
+    for (const side of [-1,1]) {
+      mesh.box(side*(radius+.17),0,0,.34,spring,depth+.21,varColor(stones[0]),STONE);
+    }
+    const mx=(left+right)/2, wallWidth=right-left;
+    mesh.box(mx,height-.18,0,wallWidth+.13,.23,depth+.47,basalt,STONE);
+    mesh.box(mx,height+.026,0,wallWidth+.24,.19,depth+.70,stones[2],STONE);
+    for (const end of [-1,1]) {
+      for (let i=0; i<Math.floor(wallWidth/1.25); i++) {
+        const p=left+.52+i*1.25;
+        if (Math.abs(p)<4.7) continue;
+        mesh.box(p,height+.16,end*(depth*.49),.72,.47,.44,varColor(choice(stones)),STONE);
+        mesh.box(p,height+.61,end*(depth*.49),.86,.115,.56,stones[2],STONE);
+      }
+    }
+    const terrace=height+.13;
+    house(mesh,0,0,7.28,4.37,2.46,0,{base:terrace,roof:jadeRoof,paint:maple,plaster:rgb("b38c55"),pitch:1.10,lit:true});
+    house(mesh,0,-.08,5.57,3.42,1.44,0,{base:terrace+2.44,roof:jadeRoof,paint:maple,plaster:rgb("bda16b"),pitch:1.17,lit:true});
+    mesh.box(0,terrace+1.67,2.6,1.8,.42,.12,ink,WOOD);
+    sign(mesh,0,terrace+1.70,2.673,1.74,.37,5);
+    for (const side of [-1,1]) {
+      lantern(mesh,side*2.78,terrace+1.84,2.60,.49);
+      lantern(mesh,side*2.52,2.68,depth*.5+.63,.45);
+      mesh.box(side*4.09,terrace,1.73,.26,.87,.25,maple,WOOD);
+      mesh.box(side*3.95,terrace+.79,1.76,.8,.11,.12,maple,WOOD);
+    }
+  });
+}
+
+function wharf(mesh,x,side,w) {
+  const z=bankZ(x,side);
+  const angle=-Math.atan((bankZ(x+.2,side)-bankZ(x-.2,side))/.4)+(side===1 ? Math.PI : 0);
+  mesh.at(x,0,z,angle,()=>{
+    for (let i=0; i<Math.ceil(w/.52); i++) {
+      const a=-w/2+.26+i*.52;
+      mesh.box(a,.60,.09,.49,.14,4.6,varColor(rgb("a88456"),.14),WOOD);
+    }
+    for (const zz of [1.95,-1.80]) {
+      mesh.box(0,.35,zz,w,.21,.25,lumber,WOOD);
+      for (let i=0; i<Math.ceil(w/1.5); i++) {
+        const xx=-w*.5+.3+i*1.5;
+        mesh.beam([xx,-.07,zz],[xx,i%4===0?1.35:.75,zz],.13,.10,varColor(lumber),WOOD,6);
+      }
+    }
+    for (let j=0; j<4; j++) {
+      const a=-w*.30+j*.50;
+      basket(mesh,a,.744,.76,range(.30,.54),choice([tea,rice,rgb("a18b58")]));
+      if (j%2===1) mesh.box(a+.20,.742,-.42,.65,.42,.59,tea,WOOD);
+    }
+    for (const side of [-1,1]) {
+      mesh.box(side*w*.43,.67,-1.55,.13,1.62,.15,lumber,WOOD);
+      lantern(mesh,side*w*.43,1.85,-1.55,.38);
+    }
+  });
+}
+
+function hills(mesh) {
+  const bands=[
+    {z:-55,h:10.5,w:23,color:rgb("818965"),offset:3},
+    {z:-76,h:14.8,w:26,color:rgb("969682"),offset:12.1},
+    {z:-103,h:18.1,w:30,color:rgb("a29a86"),offset:23.4}
+  ];
+  for (const band of bands) {
+    function profile(x,t) {
+      const hills=.39+.19*Math.sin((x+band.offset)*.088)+.135*Math.sin((x+band.offset*3)*.172)
+        +.12*Math.cos((x-band.offset)*.032)+.063*Math.sin(x*.38+band.offset);
+      const crest=Math.pow(Math.sin(Math.PI*t),1.42);
+      return [
+        x, .13+(band.h*hills+.7)*crest,
+        band.z+band.w*(t-.54)+Math.sin(x*.04+band.offset)*3.8
+      ];
+    }
+    function normal(x,t) {
+      const horizontal=sub(profile(x+.12,t),profile(x-.12,t));
+      const depth=sub(profile(x,Math.min(1,t+.02)),profile(x,Math.max(0,t-.02)));
+      return unit(cross(depth,horizontal));
+    }
+    for (let x=-166; x<166; x+=3.5) {
+      for (let j=0;j<9;j++) {
+        const a=j/9,b=(j+1)/9;
+        const corners=[[x,a],[x,b],[x+3.5,b],[x+3.5,a]];
+        const points=corners.map(([u,v])=>profile(u,v));
+        const normals=corners.map(([u,v])=>normal(u,v));
+        mesh.smoothQuad(points,normals,band.color,HILL);
+      }
+    }
+  }
+}
+
+function cart(mesh,x,z,angle) {
+  mesh.at(x,groundY,z,angle,()=>{
+    const wood=rgb("8f6844");
+    mesh.box(0,.67,0,1.20,.10,1.84,lumber,WOOD);
+    for (const side of [-1,1]) {
+      mesh.box(side*.63,.74,0,.09,.23,1.88,wood,WOOD);
+      mesh.beam([side*.53,.71,.74],[side*.71,.55,2.51],.062,.062,wood,WOOD,4);
+      for (let i=0;i<9;i++) {
+        const a=i*TAU/9, b=(i+1)*TAU/9;
+        const pos=(t)=>[side*.69,.57+.559*Math.sin(t),.014+.559*Math.cos(t)];
+        mesh.beam(pos(a),pos(b),.047,.047,lumber,WOOD,4);
+        if (i%2===0) mesh.beam([side*.69,.57,.014],pos(a),.031,.031,wood,WOOD,4,false);
+      }
+    }
+    mesh.beam([-1,.57,.01],[1,.57,.01],.077,.077,lumber,WOOD,6);
+    for (let i=0;i<3;i++) basket(mesh,(i%2)*.55-.26,.79,-.55+.43*i,.46,range(0,1)>.5?rice:tea);
+  });
+}
+
+function lanternPost(mesh,x,z,h) {
+  mesh.at(x,groundY,z,0,()=>{
+    mesh.box(0,-.051,0,.31,.21,.31,basalt,STONE);
+    mesh.box(0,0,0,.11,h,.12,lumber,WOOD);
+    mesh.beam([-.14,h,0],[.55,h,0],.076,.069,maple,WOOD,4);
+    lantern(mesh,.44,h-.35,0,.41);
+  });
+}
+
+function sceneGeometry() {
+  const mesh=new Mesh();
+  hills(mesh);
+  ground(mesh);
+
+  field(mesh,-61,bankRoad(-61,1)+8.70,15,6.3,.068);
+  field(mesh,-42,bankRoad(-42,1)+8.62,15.3,6.1,-.048);
+  field(mesh,-75,bankRoad(-75,-1)-10.8,16,8.9,-.16);
+  field(mesh,-58,bankRoad(-58,-1)-15.2,11,7.4,.074);
+  fence(mesh,-68,bankRoad(-68,1)+4.6,-35,bankRoad(-35,1)+4.55);
+  fence(mesh,-82,bankRoad(-82,-1)-4.3,-63,bankRoad(-63,-1)-4.53);
+  fence(mesh,18,bankRoad(18,1)+8,40,bankRoad(40,1)+6);
+
+  const farBuildings=[
+    [-73,5.3,4.4,2.2],[-64,5.7,4.3,2.5],[-53,6.3,4.85,2.55],[-44,5.0,4.4,2.9],[-37.2,5.4,4.36,2.55],
+    [-29,6.9,4.8,3.16],[-21.5,5.5,4.6,2.85],[-14.7,5.8,5.2,3.78],[-7.4,5.1,4.35,3.05],
+    [4.8,5.4,4.44,2.99],[11.5,6.28,5.05,3.45],[18.3,5.35,4.9,3.23],[24.6,5.58,4.2,3.00],
+    [31.7,7.2,5.18,3.33],[39.4,5.9,5.1,3.33],[46.05,5.18,4.5,2.93],
+    [60.4,5.0,4.46,2.58],[67.1,5.7,4.5,2.98],[74.9,6.9,5.1,3.48],[82.3,5.3,4.63,2.65]
+  ];
+  farBuildings.forEach(([x,w,d,h],i)=>{
+    house(mesh,x,bankRoad(x,-1)-d/2-range(2.75,3.30),w,d,h,range(-.17,.18),{
+      gallery:i>3 && i%2===0, roof:i%3===0 ? clayRoof : i%4===0 ? greyRoof : jadeRoof,
+      lit:i%3===1, stairs:i%2===0, sign:i%5===0 ? i%8 : undefined
+    });
+  });
+  for (let i=0;i<22;i++) {
+    const x=-50+i*6.15+range(-.58,.62);
+    if (Math.abs(x-gateX)<4.5 || Math.abs(x-bridgeX)<4.3) continue;
+    house(mesh,x,bankRoad(x,-1)-range(11.1,13.6),range(4,5.75),range(3.1,5.20),range(2.8,3.9),range(-.22,.27),{
+      roof:i%3===1 ? clayRoof : jadeRoof, lit:i%3===1
+    });
+  }
+  for (let i=0;i<10;i++) {
+    const x=-8+i*8.32+range(-.75,.85);
+    if (Math.abs(x-gateX)<6) continue;
+    house(mesh,x,bankRoad(x,-1)-range(20.7,23.8),range(4.4,6.87),range(4.1,5.7),range(2.4,3.3),
+      range(-.19,.20),{roof:i%4===2?clayRoof:greyRoof});
+  }
+
+  const nearBuildings=[[-77,5.5,4.4,2.9],[-31.6,5.5,4.8,2.88],[-23.9,5.9,4.9,3.04],[-15.6,6.6,5,3.25],
+    [10.7,5.7,4.6,2.86],[18.0,5.3,4.9,3.07],[26.0,6.1,5.1,3.18],[35.2,6.9,4.9,3.3],
+    [43.8,4.6,4.1,2.54],[67.4,5.8,4.81,2.4],[75.2,6.6,4.9,2.86]];
+  nearBuildings.forEach(([x,w,d,h],i)=>{
+    house(mesh,x,bankRoad(x,1)+d/2+range(3.15,5.74),w,d,h,Math.PI+range(-.19,.19),{
+      gallery:i%4===1, roof:i%3===0?clayRoof:jadeRoof, sign:i%3===1?i%5:undefined, lit:i%2===1
+    });
+  });
+  house(mesh,-7.6,bankRoad(-7.6,1)+8.4,5.22,4.55,2.63,Math.PI+.12,{roof:clayRoof,lit:true,sign:0,stairs:true});
+  house(mesh,4.8,bankRoad(4.8,1)+12.3,8.3,5.9,3.18,Math.PI+.02,{roof:jadeRoof,gallery:true,lit:true,sign:6});
+  house(mesh,9.4,bankRoad(9.4,-1)-14.5,6.0,6,3.1,.07,{roof:jadeRoof,lit:true});
+  house(mesh,29.9,bankRoad(29.9,-1)-12.2,8.32,6.25,3.18,.35,{roof:jadeRoof,paint:maple,lit:true,gallery:true});
+  house(mesh,29.9,bankRoad(29.9,-1)-12.26,5.7,4.17,1.64,.35,{base:3.65,roof:jadeRoof,paint:maple,pitch:1.45,lit:true});
+  house(mesh,-43,bankRoad(-43,1)+11.1,6.42,5.20,3.09,Math.PI-.26,{roof:clayRoof,paint:tea,stairs:true,lit:true});
+  house(mesh,2.98,bankRoad(2.98,-1)-11.7,5.6,4.85,2.52,.29,{roof:clayRoof,paint:lumber,lit:true});
+
+  for (const side of [-1,1]) {
+    const xs= side===1 ? [-43,-32,-23,-13,-8,3.1,7.1,13.5,20,26.3,32.3,46] : [-42,-27,-20,-12,-7,3.1,8.7,13.9,20.2,29.3,43,63];
+    xs.forEach((x,i)=>{
+      const z=bankRoad(x,side)-side*range(2.55,3.35);
+      marketStall(mesh,x,z,side===1 ? range(-.13,.16) : Math.PI+range(-.20,.21),shopCloths[i%shopCloths.length],i%5,i%3!==1);
+    });
+    for (const x of [-21,-8,4.9,17.2,39.3,49.1,66]) {
+      lanternPost(mesh,x,bankRoad(x,side)+side*(2.4+range(-.16,.32)),range(2.7,3.35));
+    }
+  }
+
+  umbrella(mesh,-7.6,groundY,bankRoad(-7.6,1)+1.8,1.51,rgb("c18b4f"));
+  umbrella(mesh,4.2,groundY,bankRoad(4.2,-1)-1.8,1.40,rgb("a75f3e"));
+  umbrella(mesh,8.2,groundY,bankRoad(8.2,1)+1.8,1.44,rgb("ae704b"));
+  umbrella(mesh,-30.7,groundY,bankRoad(-30.7,-1)+1.9,1.25,rgb("bd9b59"));
+
+  bridge(mesh);
+  gate(mesh);
+  wharf(mesh,-40,-1,13);
+  wharf(mesh,-53,1,9.35);
+  wharf(mesh,18.4,-1,6.4);
+  wharf(mesh,31.7,1,6.7);
+  wharf(mesh,66.15,-1,5.3);
+  cart(mesh,-12,bankRoad(-12,-1)+.37,1.81);
+  cart(mesh,8.4,bankRoad(8.4,1)-.42,-1.46);
+  cart(mesh,43.3,bankRoad(43.3,-1),1.7);
+
+  const mainTrees=[
+    [-76,1,3.2,6.8],[-65,1,3.3,7.7],[-54,1,7.2,6.1],[-47,1,2.8,6.6],[-27,1,2.9,4.4],
+    [-8.1,1,2.6,5.0],[18.3,1,2.75,5.67],[38.5,1,2.7,6.0],[52,1,4.3,6.8],[61.2,1,4.8,7.2],[83,1,4.5,6.5],
+    [-81,-1,3.4,6.6],[-68,-1,3.5,5.8],[-58.5,-1,3.45,6.0],[-32.6,-1,3.2,5.8],[-16.6,-1,2.95,5.2],
+    [3.9,-1,2.85,6.0],[15,-1,3.2,5.1],[22,-1,3.27,5.6],[37.9,-1,3.12,5.6],[49.6,-1,2.98,4.9],[66.2,-1,2.75,5.52],[78,-1,3.0,6.5]
+  ];
+  mainTrees.forEach(([x,s,d,h])=>willow(mesh,x,bankZ(x,s)+s*d,h));
+  const groves=[
+    [-85,-39,48,-39,5.0],[-76,-52,25,-48,5.5],[-30,-42,71,-42,4.3],[-57,28,-36,34,4.5],
+    [-31,32,49,35,5.8],[48,24,88,35,6.5],[-72,34,-95,23,5.7]
+  ];
+  groves.forEach(([x,z,endX,endZ,size],group)=>{
+    const count=Math.ceil(Math.abs(endX-x)/(group===0?6.8:9.6));
+    for (let i=0;i<count;i++) {
+      const t=i/count;
+      willow(mesh,mix(x,endX,t)+range(-1.88,1.88),mix(z,endZ,t)+range(-3.25,3.25),
+        size*range(.69,1.21),group<3?"pine":"willow",.78);
+    }
+  });
+
+  for (const [x,z,h] of [[-37.2,26.8,7.25],[-29.1,29.1,5.17],[-41.5,31.5,5.33],[12.9,-45.4,7.3],[33.0,-46.8,6.9]]) {
+    willow(mesh,x,z,h,z<0?"pine":"willow",.73);
+  }
+
+  for (let i=0;i<235;i++) {
+    const x=range(-94,94), side=rnd()<.53 ? 1 : -1;
+    const z=bankRoad(x,side)+side*range(4.4,26);
+    const h=.686+Math.max(0,Math.abs(z-bankZ(x,side))-23)*.001;
+    const size=range(.24,1.11);
+    if ((x<-34 && x>-70 && side===1) || (x>-7 && x<3)) continue;
+    for (let stem=0;stem<3;stem++) {
+      const a=[x+range(-.18,.18),h,z+range(-.19,.19)];
+      const b=add(a,[range(-.12,.17)*size,range(.10,.45)*size,range(-.10,.11)]);
+      mesh.tri(add(a,[-.041,0,0]),add(a,[.049,0,0]),b,choice(willowTones),REED);
+    }
+  }
+
+  for (let i=0;i<90;i++) {
+    const x=range(-88,85), side=rnd()<.5 ? -1 : 1, z=bankZ(x,side)+range(2.25,17)*side;
+    const nearRoad=Math.abs(z-bankRoad(x,side))<2.6;
+    if (nearRoad && Math.abs(x-bridgeX)<4) continue;
+    if (nearRoad) {
+      mesh.ball(x,.677,z,range(.08,.19),range(.035,.075),range(.064,.19),varColor(basalt,.24),STONE,5,2);
+    } else if (rnd()<=.43) {
+      mesh.ball(x,.66+range(.02,.15),z,range(.27,.70),range(.16,.39),range(.24,.62),choice(willowTones),LEAF,6,2);
+    } else {
+      mesh.ball(x,.66,z,range(.32,.93),range(.12,.32),range(.21,.52),varColor(basalt,.22),STONE,6,2);
+    }
+  }
+  return mesh;
+}
+function figure(mesh,carrying=false) {
+  const skin=rgb("bd9064"), hair=rgb("463d2f");
+  const cloth=rgb("eee0ba"), shoes=rgb("433f33");
+  for (const side of [-1,1]) {
+    const x=side*.135;
+    mesh.beam([x,.082,0],[x,.62,-.012],.077,.095,cloth,LEG,5);
+    mesh.box(x,0,.043,.16,.085,.25,shoes,LEG);
+  }
+  mesh.beam([0,.27,0],[0,1.11,-.016],.298,.231,cloth,ROBE,7);
+  mesh.beam([0,.80,-.012],[0,.88,-.012],.239,.24,scale(cloth,.63),ROBE,7);
+  mesh.beam([-.12,1.18,.14],[.088,.92,.187],.038,.032,rice,CLOTH,4);
+  mesh.beam([.115,1.18,.15],[-.014,1.016,.177],.032,.034,scale(cloth,.89),CLOTH,4);
+  for (const side of [-1,1]) {
+    const elbow=[side*.281,.866,carrying ? .09 : .02];
+    const wrist=[side*.245,carrying ? .93 : .666,carrying ? .23 : .057];
+    mesh.beam([side*.158,1.103,-.027],elbow,.132,.113,cloth,ROBE,5);
+    mesh.beam(elbow,wrist,.113,.072,cloth,ROBE,5);
+    mesh.ball(...wrist,.059,.076,.061,skin,STONE,6,2);
+  }
+  mesh.beam([0,1.1,0],[0,1.24,0],.095,.079,skin,STONE,6);
+  mesh.ball(0,1.33,.018,.139,.169,.131,skin,STONE,8,3);
+  mesh.ball(0,1.455,-.020,.151,.098,.151,hair,CLOTH,8,3);
+  if (carrying) {
+    mesh.ball(0,1.51,-.061,.225,.059,.20,rgb("a88a58"),WOOD,8,2);
+    mesh.ball(0,1.544,-.053,.113,.082,.115,tea,WOOD,8,2);
+    basket(mesh,.248,.71,.261,.245,rice);
+  } else {
+    mesh.ball(.015,1.524,-.048,.071,.077,.076,hair,CLOTH,6,2);
+    mesh.box(-.032,.25,-.058,.05,.18,.261,scale(cloth,.81),ROBE);
+  }
+  return mesh;
+}
+
+function personRoutes() {
+  const bridgePeople=Array.from({length:16},(_,i)=>({
+    kind:"bridge", row:(i%2===0?-1:1)*range(.73,1.66), phase:i/16+range(-.022,.022),
+    speed:range(.013,.022), tint:choice(robeColors), size:range(.89,1.10)
+  }));
+  const roadPeople=Array.from({length:54},(_,i)=>({
+    kind:"road", side:i%2===0?-1:1, lane:choice([-1.2,-.44,.44,1.15])+range(-.19,.23),
+    origin:i%4>1 ? range(-34,44) : range(-68,76), length:range(6,17),
+    phase:range(0,1), speed:range(.011,.022), tint:choice(robeColors), size:range(.87,1.13)
+  }));
+  const locals=Array.from({length:34},(_,i)=>{
+    const side=i%2===0?-1:1;
+    const x=choice([-42,-26,-20,-13,-7,-5,3.0,7.4,12.5,19.4,26.7,43.4,64])+range(-.87,.74);
+    return {
+      kind:"local", x,z:bankRoad(x,side)-side*range(1.25,2.03), a:side===1?0:Math.PI,
+      phase:range(0,1), tint:choice(robeColors), size:range(.86,1.105)
+    };
+  });
+  return [...bridgePeople,...roadPeople,...locals];
+}
+
+function walker(batch,index,person,time) {
+  const t=(person.phase + time*person.speed)*TAU;
+  const stride=person.phase*71;
+  if (person.kind==="bridge") {
+    const z=bridgeZ+Math.sin(t)*(bridgeSpan+1.4);
+    const x=bridgeX+person.row+Math.sin(time*.86+stride)*.12;
+    const y=Math.abs(z-bridgeZ)<=bridgeSpan ? bridgeDeck(z)+.036 : groundY;
+    transform(batch,index,x,y,z,Math.cos(t)>0 ? 0 : Math.PI,person.size,person.tint,stride);
+  } else if (person.kind==="road") {
+    const x=person.origin+Math.sin(t)*person.length;
+    const z=bankRoad(x,person.side)+person.lane+Math.sin(time*.41+stride)*.19;
+    const slope=(bankRoad(x+.1,person.side)-bankRoad(x-.1,person.side))/.2;
+    transform(batch,index,x,groundY+.035,z,Math.atan2(1,slope)+(Math.cos(t)>0?0:Math.PI),person.size,person.tint,stride);
+  } else {
+    const x=person.x+Math.sin(time*.30+stride)*.15;
+    const yaw=person.a+Math.sin(time*.39+stride)*.30;
+    transform(batch,index,x,groundY+.035,person.z,yaw,person.size,person.tint,-1);
+  }
+}
+
+function boatMesh(kind) {
+  const mesh=new Mesh();
+  const cargo=kind==="cargo", covered=kind==="covered";
+  const length=cargo?12.1:covered?8.10:5.65;
+  const width=cargo?3.42:covered?2.42:1.71;
+  const hulls=cargo?palette("7d5435 9e7045 815437 996745 6f4933"):palette("916740 855939 a0764b 735138");
+  function hull(t,side,k) {
+    const end=Math.pow(Math.abs(t),4);
+    const bend=Math.max(.032,Math.pow(1-Math.pow(Math.abs(t),2.58),.68));
+    const levels=[-.28,.24,.47,.61];
+    const offsets=[.37,.78,.95,1.0];
+    return [t*length*.5,levels[k]+end*(cargo?.80:.48),side*width*.5*bend*offsets[k]];
+  }
+  const sections=14;
+  for (let j=0; j<sections; j++) {
+    const a=2*j/sections-1,b=2*(j+1)/sections-1;
+    for (const side of [-1,1]) {
+      for (let k=0;k<3;k++) {
+        const points=[hull(a,side,k),hull(a,side,k+1),hull(b,side,k+1),hull(b,side,k)];
+        if (side>0) points.reverse();
+        mesh.quad(...points,varColor(hulls[k%hulls.length],.12),WOOD);
+      }
+      mesh.beam(hull(a,side,3),hull(b,side,3),cargo?.105:.068,cargo?.105:.068,lumber,WOOD,5,false);
+    }
+    const c=varColor(rgb("b28b57"),.15);
+    mesh.quad(hull(a,1,3),hull(b,1,3),hull(b,-1,3),hull(a,-1,3),c,WOOD);
+    if (j%2===0) {
+      const t=(a+b)/2;
+      mesh.beam(add(hull(t,1,3),[0,.045,0]),add(hull(t,-1,3),[0,.045,0]),.042,.042,lumber,WOOD,4,false);
+    }
+  }
+  for (const end of [-1,1]) {
+    const p=hull(end,1,3);
+    mesh.box(p[0]*.92,p[1]-.12,0,.18,cargo?.37:.22,.23,tea,WOOD);
+    mesh.beam(hull(end,1,1),add(p,[0,cargo?.26:.15,0]),.083,.055,lumber,WOOD,5);
+  }
+
+  if (cargo) {
+    mesh.box(-2.05,.66,0,2.58,.7,2.32,tea,WOOD);
+    for (const x of [-3.38,-.71]) {
+      for (const side of [-1,1]) {
+        mesh.box(x,.64,side*1.16,.107,1.45,.11,lumber,WOOD);
+      }
+    }
+    mesh.at(-2.0,0,0,0,()=>roof(mesh,2.01,2.86,2.74,.63,clayRoof,.085,false));
+    const mast=.22;
+    mesh.beam([mast,.56,0],[mast,9.42,0],.115,.064,lumber,WOOD,6);
+    mesh.beam([mast,8.9,0],[5.12,.97,-.039],.021,.021,ink,WOOD,4,false);
+    mesh.beam([mast,8.92,0],[-5.5,.97,-.09],.018,.018,ink,WOOD,4,false);
+    const sailColors=palette("e7c689 e0bb7b dfb879 d6af74 ebcf91 d5aa72");
+    const rows=9, cols=8;
+    function sailPoint(t,u) {
+      const left=-2.95+.46*t;
+      const right=2.71-.44*t + Math.sin(t*Math.PI)*.51;
+      return [mast+mix(left,right,u)+t*.30,2.43+6.54*t+(u-.5)*(.4+t*.44),
+        .069+Math.sin(Math.PI*u)*(.54+.49*Math.sin(t*Math.PI)) + u*.15];
+    }
+    for (let j=0;j<rows;j++) {
+      for (let i=0;i<cols;i++) {
+        const a=i/cols,b=(i+1)/cols,c=j/rows,d=(j+1)/rows;
+        mesh.quad(sailPoint(c,a),sailPoint(c,b),sailPoint(d,b),sailPoint(d,a),
+          varColor(sailColors[(j+(i===0?1:0))%sailColors.length],.052),CLOTH);
+        const p=add(sailPoint(c,a),[0,0,.016]),q=add(sailPoint(c,b),[0,0,.016]);
+        mesh.beam(p,q,.032,.028,rgb("886440"),WOOD,4,false);
+      }
+    }
+    for (const side of [0,1]) {
+      for (let j=0; j<rows;j++) {
+        mesh.beam(sailPoint(j/rows,side),sailPoint((j+1)/rows,side),.04,.037,tea,WOOD,4,false);
+      }
+    }
+    mesh.quad([mast,9.43,.015],[mast+1.0,9.34,.12],[mast+1.47,9.57,.24],[mast,9.78,.014],maple,CLOTH,[0,0,1]);
+    basket(mesh,2.4,.65,.4,.51,rice);
+    basket(mesh,3.0,.66,-.41,.46,rgb("9c8653"));
+    mesh.at(3.69,.74,.12,-1.43,()=>figure(mesh,false));
+  } else if (covered) {
+    const canopy=palette("ad8d50 b29963 a58b59 bda169 9c7b4f");
+    for (const x of [-1.58,1.58]) {
+      for (const z of [-.91,.91]) {
+        mesh.beam([x,.67,z],[x,1.66,z],.062,.045,lumber,WOOD,5);
+      }
+    }
+    const f=(x,t)=>[x,1.54+.63*Math.sin(t*Math.PI),mix(-1.06,1.06,t)];
+    for (let i=0; i<9; i++) {
+      for (let j=0; j<6; j++) {
+        const a=j/6,b=(j+1)/6,x0=mix(-1.69,1.69,i/9),x1=mix(-1.69,1.69,(i+1)/9);
+        mesh.quad(f(x0,a),f(x0,b),f(x1,b),f(x1,a),varColor(choice(canopy),.08),WOOD);
+        mesh.beam(f(x0,a),f(x0,b),.024,.025,scale(canopy[j%canopy.length],.81),WOOD,3,false);
+      }
+    }
+    mesh.at(-2.37,.71,.12,Math.PI*.59,()=>figure(mesh,true));
+    mesh.beam([-2.28,1.65,.08],[-4.42,.02,1.93],.037,.073,tea,OAR,5);
+  } else {
+    mesh.at(-.88,.60,.08,1.51,()=>figure(mesh,true));
+    mesh.beam([-1.0,1.59,.08],[-2.82,.047,1.69],.034,.065,tea,OAR,5);
+    basket(mesh,.80,.62,.18,.41,rice);
+    basket(mesh,1.43,.64,-.21,.39,rgb("a48b52"));
+  }
+
+  const wake=rgb("819f80");
+  for (const side of [-1,1]) {
+    for (let i=0;i<9;i++) {
+      const a=i/9, b=(i+.77)/9;
+      const point=(t)=>[-length*.30-5.63*t,.022,side*(.28+width*.37+t*2.04)];
+      const p=point(a),q=point(b),off=[0,0,side*(.085-.05*a)];
+      mesh.quad(p,q,add(q,off),add(p,off),varColor(wake,.12),INK,UP);
+    }
+  }
+  return mesh;
+}
+
+function birdMesh() {
+  const mesh=new Mesh();
+  const feather=rgb("51493a");
+  mesh.ball(0,0,0,.071,.075,.226,feather,INK,5,2);
+  for (const side of [-1,1]) {
+    mesh.tri([0,0,.145],[side*.39,.13,.03],[side*.63,.02,-.21],feather,WING,UP);
+    mesh.tri([0,0,.145],[side*.63,.02,-.21],[side*.19,0,-.107],varColor(feather),WING,UP);
+  }
+  return mesh;
+}
+
+const voyages=[
+  [{x:-31,side:.45,speed:.64,a:-75,b:-19,turn:2.15},
+    {x:-91,side:-1.65,speed:-.38,a:-113,b:-66,turn:1.54,size:.82}],
+  [{x:-12,side:-3.28,speed:.91,a:-104,b:115}, {x:29,side:4.2,speed:-.77,a:-104,b:115},
+    {x:63,side:-3.5,speed:1.08,a:-104,b:115}, {x:-70,side:4.4,speed:-.84,a:-104,b:115}],
+  [{x:-49,side:5.4,speed:.85,a:-103,b:110}, {x:10,side:-.12,speed:.81,a:-103,b:110},
+    {x:24,side:-5.9,speed:-1.12,a:-103,b:110}, {x:48,side:.56,speed:1.03,a:-103,b:110},
+    {x:76,side:5.5,speed:-.9,a:-103,b:110}, {x:-25,side:-5.28,speed:-.83,a:-103,b:110}]
+];
+
+function boat(batch,index,route,time) {
+  const width=route.b-route.a;
+  let x,z,dx,dz;
+  if (route.turn) {
+    const half=width/2;
+    const mid=(route.a+route.b)/2;
+    const initial=Math.asin((route.x-mid)/half);
+    const phase=initial+time*route.speed/half;
+    x=mid+half*Math.sin(phase);
+    z=riverZ(x)+route.side+route.turn*(Math.cos(phase)-Math.cos(initial)*.42);
+    dx=half*Math.cos(phase)*Math.sign(route.speed);
+    dz=-route.turn*Math.sin(phase)*Math.sign(route.speed);
+  } else {
+    x=route.a+((route.x-route.a+route.speed*time)%width+width)%width;
+    z=riverZ(x)+route.side+Math.sin(time*.3+index)*.21;
+    dx=route.speed;
+    dz=0;
+  }
+  const tangent=(riverZ(x+.1)-riverZ(x-.1))/.2;
+  const rot=-Math.atan2(tangent*dx+dz,dx);
+  const roll=Math.sin(time*1.7+index*2.43)*.014;
+  transform(batch,index,x,.02+Math.sin(time*1.81+index*1.37)*.037,z,rot,route.size || 1,[1,1,1],index*12,roll);
+}
+
+const haloVert=`#version 300 es
+layout(location=0) in vec4 point;
+uniform mat4 uCamera;
+uniform float uAspect;
+out vec2 vUv;
+void main() {
+  const vec2 corners[6]=vec2[6](vec2(-1,-1),vec2(1,-1),vec2(1,1),vec2(-1,-1),vec2(1,1),vec2(-1,1));
+  vUv = corners[gl_VertexID];
+  vec4 p = uCamera * vec4(point.xyz,1.0);
+  p.xy += vUv * vec2(1.0/uAspect,1.0) * point.w*length(uCamera[1].xyz)*2.9;
+  p.z -= .006;
+  gl_Position=p;
+}`;
+const haloFrag=`#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform float uNight;
+out vec4 color;
+void main() {
+  float r=dot(vUv,vUv);
+  float blend=max(0.0,exp(-5.3*r)-0.005)*(1.0-smoothstep(0.63,1.0,r));
+  color=vec4(vec3(1.0,0.51,0.17),blend*uNight*0.37);
+}`;
+
+function haloMesh(gl) {
+  const vao=gl.createVertexArray();
+  const buffer=gl.createBuffer();
+  gl.bindVertexArray(vao);
+  gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(glows.flat()),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0,4,gl.FLOAT,false,16,0);
+  gl.vertexAttribDivisor(0,1);
+  gl.bindVertexArray(null);
+  return vao;
+}
+const chapters=[
+  {name:"长卷总览",note:"汴河贯穿市集，舟车在虹桥相会。",x:4.1,y:1.35,z:-13.2,yaw:.39,pitch:.46,span:50.7},
+  {name:"河湾船埠",note:"漕船载货而来，岸边栈桥供船只停靠。",x:-37.5,y:1.0,z:-3.3,yaw:.47,pitch:.39,span:24.5,
+    marker:[-40,2.45,bankZ(-40,-1)+.82]},
+  {name:"虹桥市集",note:"木拱跨河，桥头摊棚顺着河岸铺开。",x:bridgeX,y:2.6,z:-1.8,yaw:.62,pitch:.43,span:23.4,
+    marker:[bridgeX,7.6,bridgeZ]},
+  {name:"沿岸街巷",note:"茶肆、客舍和瓦屋沿着河岸排开。",x:25.2,y:1.1,z:-17.0,yaw:.35,pitch:.57,span:25.9},
+  {name:"汴京城门",note:"行人沿官道穿过石砌券门，进入城内。",x:gateX,y:2.25,z:gateZ-1.0,yaw:1.01,pitch:.40,span:23.7,
+    marker:[gateX,11.9,gateZ]}
+];
+
+function makeRenderer(gl) {
+  seed=304113;
+  glows.length=0;
+  const surface=program(gl,sceneVert,sceneFrag,[
+    "uCamera","uView","uLightMatrix","uInstanced","uClock","uNight","uSun","uShadow","uSigns","uShadowTexel"
+  ]);
+  const depth=program(gl,shadowVert,shadowFrag,["uLightMatrix","uInstanced","uClock"]);
+  const sky=program(gl,skyVert,skyFrag,["uNight"]);
+  const halo=program(gl,haloVert,haloFrag,["uCamera","uNight","uAspect"]);
+  const atlas=makeSignAtlas(gl);
+  const shadowDim=matchMedia("(pointer: coarse)").matches ? 1344 : 2048;
+  const shadowBuffer=gl.createFramebuffer();
+  const shadowTexture=gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D,shadowTexture);
+  gl.texStorage2D(gl.TEXTURE_2D,1,gl.DEPTH_COMPONENT24,shadowDim,shadowDim);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,shadowBuffer);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.DEPTH_ATTACHMENT,gl.TEXTURE_2D,shadowTexture,0);
+  gl.drawBuffers([gl.NONE]);
+  gl.readBuffer(gl.NONE);
+  if (gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE) throw Error("Shadow buffer incomplete");
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+
+  const scenery=upload(gl,sceneGeometry());
+  const people=personRoutes();
+  const halves=[people.slice(0,64),people.slice(64)];
+  const crowds=halves.map((group,i)=>upload(gl,figure(new Mesh(),i===1),group.length));
+  const vessels=["cargo","covered","skiff"].map((kind,i)=>upload(gl,boatMesh(kind),voyages[i].length));
+  const birds=upload(gl,birdMesh(),9);
+  const lanterns=haloMesh(gl);
+  const empty=gl.createVertexArray();
+  const batches=[scenery,...crowds,...vessels,birds];
+  const lamp=unit([-.58,1,.54]);
+  const light=combine(ortho(-124,124,-90,90,5,260),lookAt(scale(lamp,123),[-3,0,-2]));
+  let shadowTime=-1, animatedTime=-1;
+
+  function updateInstances(time) {
+    crowds.forEach((batch,i)=>halves[i].forEach((person,j)=>walker(batch,j,person,time)));
+    vessels.forEach((batch,i)=>voyages[i].forEach((route,j)=>boat(batch,j,route,time)));
+    for (let i=0; i<birds.instances; i++) {
+      const phase=(time*.018+i*.011)*TAU;
+      const x=-11+51*Math.sin(phase)+i*.4;
+      const z=-36-13*Math.cos(phase)+(i%3)*1.73;
+      const h=11.57+Math.sin(phase*2.0+i*.71)*1.35+i*.16;
+      const yaw=Math.atan2(51*Math.cos(phase),13*Math.sin(phase));
+      transform(birds,i,x,h,z,yaw,.81,[1,1,1],i*3.77,Math.sin(phase)*.25);
+    }
+    for (const batch of batches) {
+      if (!batch.instances) continue;
+      gl.bindBuffer(gl.ARRAY_BUFFER,batch.stream);
+      gl.bufferSubData(gl.ARRAY_BUFFER,0,batch.transforms);
+    }
+  }
+
+  function drawMeshes(pass) {
+    for (const batch of batches) {
+      gl.bindVertexArray(batch.vao);
+      gl.uniform1i(pass.uInstanced,batch.instances>0);
+      if (batch.instances) gl.drawArraysInstanced(gl.TRIANGLES,0,batch.vertices,batch.instances);
+      else gl.drawArrays(gl.TRIANGLES,0,batch.vertices);
+    }
+  }
+
+  function draw(camera,time,night,width,height,aspect) {
+    const span=camera.span;
+    const center=[camera.x,camera.y,camera.z];
+    const ray=[
+      Math.sin(camera.yaw)*Math.cos(camera.pitch),Math.sin(camera.pitch),Math.cos(camera.yaw)*Math.cos(camera.pitch)
+    ];
+    const view=lookAt(add(center,scale(ray,143)),center);
+    const viewProjection=combine(ortho(-span*aspect/2,span*aspect/2,-span/2,span/2,.1,370),view);
+
+    if (time!==animatedTime) {
+      updateInstances(time);
+      animatedTime=time;
+    }
+    if (Math.abs(time-shadowTime)>.14) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER,shadowBuffer);
+      gl.viewport(0,0,shadowDim,shadowDim);
+      gl.enable(gl.DEPTH_TEST);
+      gl.enable(gl.POLYGON_OFFSET_FILL);
+      gl.polygonOffset(.6,.5);
+      gl.clear(gl.DEPTH_BUFFER_BIT);
+      gl.useProgram(depth.handle);
+      gl.uniformMatrix4fv(depth.uLightMatrix,false,light);
+      gl.uniform1f(depth.uClock,time);
+      drawMeshes(depth);
+      gl.disable(gl.POLYGON_OFFSET_FILL);
+      shadowTime=time;
+    }
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+    gl.viewport(0,0,width,height);
+    gl.clear(gl.DEPTH_BUFFER_BIT);
+    gl.disable(gl.DEPTH_TEST);
+    gl.bindVertexArray(empty);
+    gl.useProgram(sky.handle);
+    gl.uniform1f(sky.uNight,night);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+
+    gl.enable(gl.DEPTH_TEST);
+    gl.useProgram(surface.handle);
+    gl.uniformMatrix4fv(surface.uCamera,false,viewProjection);
+    gl.uniformMatrix4fv(surface.uView,false,view);
+    gl.uniformMatrix4fv(surface.uLightMatrix,false,light);
+    gl.uniform3fv(surface.uSun,lamp);
+    gl.uniform1f(surface.uClock,time);
+    gl.uniform1f(surface.uNight,night);
+    gl.uniform1f(surface.uShadowTexel,1/shadowDim);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D,shadowTexture);
+    gl.uniform1i(surface.uShadow,0);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D,atlas);
+    gl.uniform1i(surface.uSigns,1);
+    drawMeshes(surface);
+
+    if (night>.01) {
+      gl.useProgram(halo.handle);
+      gl.uniformMatrix4fv(halo.uCamera,false,viewProjection);
+      gl.uniform1f(halo.uNight,night);
+      gl.uniform1f(halo.uAspect,aspect);
+      gl.bindVertexArray(lanterns);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA,gl.ONE);
+      gl.depthMask(false);
+      gl.drawArraysInstanced(gl.TRIANGLES,0,6,glows.length);
+      gl.depthMask(true);
+      gl.disable(gl.BLEND);
+    }
+    gl.bindVertexArray(null);
+    return viewProjection;
+  }
+  return {draw};
+}
+
+const canvasAspect = () => stage.clientWidth / Math.max(1, stage.clientHeight);
+const reduced=matchMedia("(prefers-reduced-motion: reduce)");
+const positionKeys=["x","y","z","yaw","pitch","span"];
+const markers=all(".marker");
+const navButtons=all(".stop");
+const modeButtons=all(".mode");
+const motion=$("#motion");
+const full=$("#fullscreen");
+const unavailable=$("#unavailable");
+const controls=all(".tool, .stop, .mode");
+const small=matchMedia("(max-width: 620px)");
+const activePointers=new Map();
+
+let selected=0, selectedLight=0, lighting=0, running=!reduced.matches;
+let clock=0, pending=0, previous=0, rendered=false, cameraDragged=false;
+let width=0, height=0, renderer=null;
+
+function pose(index) {
+  const chapter=chapters[index];
+  const aspect=canvasAspect();
+  const next=Object.fromEntries(positionKeys.map((key)=>[key,chapter[key]]));
+  if (aspect<1.35) {
+    next.span*=1+limit((1.35-aspect)*.27,0,.42);
+    if (index===0) {
+      next.x=bridgeX-3.1;
+      next.z=-5.8;
+      next.pitch=.59;
+    }
+    if (index===1) next.x=-34.6;
+  }
+  return next;
+}
+
+let goal=pose(0);
+let camera={...goal};
+
+function queue() {
+  if (!pending && renderer && !document.hidden) pending=requestAnimationFrame(frame);
+}
+
+function activeMotion() {
+  const icon=motion.querySelector("canvas");
+  icon.dataset.icon=running?"pause":"play";
+  const action=running?"暂停动画":"播放动画";
+  motion.setAttribute("aria-label",action);
+  motion.title=action;
+  drawIcon(icon);
+}
+
+function select(index,instant=false) {
+  selected=index;
+  cameraDragged=false;
+  goal=pose(index);
+  goal.yaw+=Math.round((camera.yaw-goal.yaw)/TAU)*TAU;
+  if (instant || reduced.matches) camera={...goal};
+  $("#scene-name").textContent=chapters[index].name;
+  $("#scene-note").textContent=chapters[index].note;
+  navButtons.forEach((button)=>button.setAttribute("aria-pressed",Number(button.dataset.stop)===selected));
+  if (selected!==0) markers.forEach((button)=>{button.hidden=true;});
+  queue();
+}
+
+function modifyZoom(factor) {
+  goal.span=limit(goal.span*factor,10.5,112);
+  cameraDragged=true;
+  queue();
+}
+
+function updateLabels(matrix) {
+  const cssWidth=stage.clientWidth, cssHeight=stage.clientHeight;
+  markers.forEach((marker)=>{
+    const [x,y,z]=project(matrix,chapters[Number(marker.dataset.stop)].marker);
+    const px=(x*.5+.5)*cssWidth, py=(.5-y*.5)*cssHeight;
+    const visible=selected===0 && !cameraDragged && !small.matches && px>53 && px<cssWidth-58 && py>65 && py<cssHeight-76 && Math.abs(z)<1;
+    marker.hidden=!visible;
+    if (visible) {
+      marker.style.left=px+"px";
+      marker.style.top=py+"px";
+    }
+  });
+  $("#zoom-in").disabled=goal.span<=10.5;
+  $("#zoom-out").disabled=goal.span>=112;
+}
+
+function resize() {
+  const w=stage.clientWidth, h=stage.clientHeight;
+  if (w<1 || h<1) return false;
+  const ratio=Math.min(devicePixelRatio,1.8,1900/w,1100/h);
+  const newWidth=Math.max(1,Math.round(w*ratio));
+  const newHeight=Math.max(1,Math.round(h*ratio));
+  if (newWidth===width && newHeight===height && rendered) return false;
+  stage.width=width=newWidth;
+  stage.height=height=newHeight;
+  return true;
+}
+
+function frame(stamp) {
+  pending=0;
+  if (!renderer || document.hidden) return;
+  const dt=previous ? limit((stamp-previous)*.001,1/144,.095) : 1/50;
+  previous=stamp;
+  const approach=reduced.matches?1:1-Math.exp(-dt*8.3);
+  let moving=false;
+  for (const key of positionKeys) {
+    const gap=goal[key]-camera[key];
+    if (Math.abs(gap)>.0005) {
+      camera[key]+=gap*approach;
+      moving=true;
+    } else camera[key]=goal[key];
+  }
+  const fading=Math.abs(lighting-selectedLight)>.001;
+  lighting=fading ? mix(lighting,selectedLight,reduced.matches?1:1-Math.exp(-dt*4.2)) : selectedLight;
+  if (running) clock+=dt;
+  resize();
+  const matrix=renderer.draw(camera,clock,lighting,width,height,canvasAspect());
+  updateLabels(matrix);
+  if (!rendered) stage.classList.add("ready");
+  rendered=true;
+  if (running || moving || fading) queue();
+  else previous=0;
+}
+
+function setFullscreenState() {
+  const fullscreen=document.fullscreenElement===viewer || viewer.classList.contains("expanded");
+  const label=fullscreen?"退出全屏":"全屏";
+  full.title=label;
+  full.setAttribute("aria-label",label);
+  const icon=full.querySelector("canvas");
+  icon.dataset.icon=fullscreen?"shrink":"expand";
+  drawIcon(icon);
+  queue();
+}
+
+async function toggleFull() {
+  if (document.fullscreenElement===viewer) {
+    await document.exitFullscreen();
+  } else if (viewer.classList.contains("expanded")) {
+    viewer.classList.remove("expanded");
+  } else if (viewer.requestFullscreen) {
+    try { await viewer.requestFullscreen(); }
+    catch { viewer.classList.add("expanded"); }
+  } else viewer.classList.add("expanded");
+  setFullscreenState();
+}
+
+for (const button of [...navButtons,...markers]) {
+  button.addEventListener("click",()=>select(Number(button.dataset.stop)));
+}
+for (const button of modeButtons) {
+  button.addEventListener("click",()=>{
+    selectedLight=Number(button.dataset.light);
+    modeButtons.forEach((item)=>{
+      item.setAttribute("aria-pressed",item===button);
+      drawIcon(item.querySelector("canvas"));
+    });
+    queue();
+  });
+}
+motion.addEventListener("click",()=>{
+  running=!running;
+  activeMotion();
+  queue();
+});
+$("#zoom-in").addEventListener("click",()=>modifyZoom(.83));
+$("#zoom-out").addEventListener("click",()=>modifyZoom(1/.83));
+$("#reset").addEventListener("click",()=>select(0));
+full.addEventListener("click",toggleFull);
+document.addEventListener("fullscreenchange",setFullscreenState);
+document.addEventListener("visibilitychange",()=>{
+  previous=0;
+  if (document.hidden && pending) {
+    cancelAnimationFrame(pending);
+    pending=0;
+  } else queue();
+});
+document.addEventListener("keydown",(event)=>{
+  if (event.key==="Escape" && viewer.classList.contains("expanded")) {
+    viewer.classList.remove("expanded");
+    setFullscreenState();
+  }
+});
+reduced.addEventListener("change",()=>{
+  running=!reduced.matches;
+  activeMotion();
+  queue();
+});
+
+stage.addEventListener("wheel",(event)=>{
+  event.preventDefault();
+  const d=event.deltaY*(event.deltaMode===1?16:event.deltaMode===2?160:1);
+  modifyZoom(Math.exp(limit(d,-135,135)*.002));
+},{passive:false});
+stage.addEventListener("contextmenu",(event)=>event.preventDefault());
+
+function pan(dx,dy) {
+  const s=goal.span/Math.max(1,stage.clientHeight);
+  goal.x=limit(goal.x-(dx*Math.cos(goal.yaw)+dy*Math.sin(goal.yaw))*s,-104,104);
+  goal.z=limit(goal.z+(dx*Math.sin(goal.yaw)-dy*Math.cos(goal.yaw))*s,-65,45);
+}
+
+stage.addEventListener("pointerdown",(event)=>{
+  if (!renderer || event.button>2) return;
+  if (activePointers.size>=2) return;
+  activePointers.set(event.pointerId,[event.clientX,event.clientY]);
+  stage.setPointerCapture(event.pointerId);
+  stage.classList.add("dragging");
+});
+stage.addEventListener("pointermove",(event)=>{
+  if (!activePointers.has(event.pointerId)) return;
+  const [x,y]=activePointers.get(event.pointerId);
+  const nx=event.clientX, ny=event.clientY;
+  if (x===nx && y===ny) return;
+  if (activePointers.size===2) {
+    const sibling=Array.from(activePointers.entries()).find(([id])=>id!==event.pointerId)[1];
+    const old=Math.hypot(x-sibling[0],y-sibling[1]);
+    const now=Math.hypot(nx-sibling[0],ny-sibling[1]);
+    if (old>12 && now>12) modifyZoom(old/now);
+    pan((nx-x)*.5,(ny-y)*.5);
+  } else if (event.shiftKey || (event.buttons & 2)!==0) {
+    pan(nx-x,ny-y);
+  } else {
+    goal.yaw-=(nx-x)*.0078;
+    goal.pitch=limit(goal.pitch+(ny-y)*.006,.16,1.26);
+  }
+  activePointers.set(event.pointerId,[nx,ny]);
+  cameraDragged=true;
+  queue();
+});
+for (const event of ["pointerup","pointercancel","lostpointercapture"]) {
+  stage.addEventListener(event,(e)=>{
+    activePointers.delete(e.pointerId);
+    if (!activePointers.size) stage.classList.remove("dragging");
+  });
+}
+
+stage.addEventListener("keydown",(event)=>{
+  switch (event.key) {
+    case "ArrowLeft": goal.yaw+=.15; break;
+    case "ArrowRight": goal.yaw-=.15; break;
+    case "ArrowUp": goal.pitch=limit(goal.pitch+.08,.16,1.26); break;
+    case "ArrowDown": goal.pitch=limit(goal.pitch-.08,.16,1.26); break;
+    case "+": case "=": modifyZoom(.83); break;
+    case "-": modifyZoom(1/.83); break;
+    case "Home": select(0); event.preventDefault(); return;
+    default: return;
+  }
+  event.preventDefault();
+  cameraDragged=true;
+  queue();
+});
+
+let compact=canvasAspect()<1.35;
+new ResizeObserver(()=>{
+  const nextCompact=canvasAspect()<1.35;
+  if (compact!==nextCompact && !cameraDragged) select(selected,true);
+  compact=nextCompact;
+  queue();
+}).observe(stage);
+
+function start() {
+  try {
+    const gl=stage.getContext("webgl2",{alpha:false,antialias:true,powerPreference:"high-performance"});
+    if (!gl) throw Error("WebGL 2 unavailable");
+    renderer=makeRenderer(gl);
+    unavailable.hidden=true;
+    controls.forEach((control)=>{control.disabled=false;});
+    select(selected,true);
+    activeMotion();
+    queue();
+  } catch (error) {
+    console.error(error);
+    unavailable.hidden=false;
+    controls.forEach((control)=>{control.disabled=true;});
+  }
+}
+stage.addEventListener("webglcontextlost",(event)=>{
+  event.preventDefault();
+  renderer=null;
+  rendered=false;
+  stage.classList.remove("ready");
+  unavailable.hidden=false;
+  controls.forEach((control)=>{control.disabled=true;});
+});
+stage.addEventListener("webglcontextrestored",start);
+start();
+})();
+</script>
+</body>
+</html>
